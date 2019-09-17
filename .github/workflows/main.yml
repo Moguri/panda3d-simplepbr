@@ -21,3 +21,12 @@ jobs:
     - name: Run Tests
       run: |
         python setup.py test
+    - name: Build package
+      run: |
+        python setup.py bdsit_wheel
+    - name: Publish package
+      if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
+      uses: pypa/gh-action-pypi-publish@master
+      with:
+        user: __token__
+        password: ${{ secrets.pypi_password }}
