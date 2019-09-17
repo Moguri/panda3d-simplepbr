@@ -57,9 +57,9 @@ import simplepbr
 
 class App(ShowBase):
     def __init__(self):
-    super().__init__()
+        super().__init__()
 
-    simplepbr.init()
+        simplepbr.init()
 ```
 
 The `init()` function will choose typical defaults, but the following can be modified via keyword arguments:
