@@ -75,9 +75,9 @@ The `init()` function will choose typical defaults, but the following can be mod
 
 The shader currently assumes that the following textures are in these slots:
 
-1. BaseColor
-2. MetalRoughness
-3. Normals (not currently supported)
+0. BaseColor
+1. MetalRoughness
+2. Normals (not currently supported)
 
 ## Example
 
