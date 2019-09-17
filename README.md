@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/Moguri/panda3d-simplepbr.svg?branch=master)](https://travis-ci.org/Moguri/panda3d-simplepbr)
+![Build Status](https://github.com/Moguri/panda3d-simplepbr/workflows/Python%20package/badge.svg)
 [![](https://img.shields.io/pypi/pyversions/panda3d_gltf.svg)](https://pypi.org/project/panda3d_gltf/)
 [![Panda3D Versions](https://img.shields.io/badge/panda3d-1.10%20%7C%201.11-blue.svg)](https://www.panda3d.org/)
 [![](https://img.shields.io/github/license/Moguri/panda3d-simplepbr.svg)](https://choosealicense.com/licenses/bsd-3-clause/)
