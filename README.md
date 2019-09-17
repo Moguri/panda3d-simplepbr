@@ -81,7 +81,7 @@ The shader currently assumes that the following textures are in these slots:
 
 ## Example
 
-An example application using `panda3d-simplepbr` is the [viewer](https://github.com/Moguri/panda3d-gltf/blob/master/gltf/viewer.py) in the [panda3d-gltf repo](https://github.com/Moguri/panda3d-gltf).
+For an example application using `panda3d-simplepbr` check out the [viewer](https://github.com/Moguri/panda3d-gltf/blob/master/gltf/viewer.py) in the [panda3d-gltf repo](https://github.com/Moguri/panda3d-gltf).
 
 ## Running tests
 ```bash
