@@ -9,7 +9,11 @@ import simplepbr
 @pytest.fixture(scope='session')
 def showbase():
     from direct.showbase.ShowBase import ShowBase
-    p3d.load_prc_file_data('', 'window-type offscreen')
+    p3d.load_prc_file_data(
+        '',
+        'window-type offscreen\n'
+        'framebuffer-hardware false\n'
+    )
     return ShowBase()
 
 
