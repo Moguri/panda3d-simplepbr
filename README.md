@@ -71,11 +71,6 @@ The `init()` function will choose typical defaults, but the following can be mod
 `camera_node`
 : The NodePath of the camera to use when rendering the scene, defaults to `base.cam` if `None`
 
-## Running tests
-```bash
-python setup.py test
-```
-
 ### Textures
 
 The shader currently assumes that the following textures are in these slots:
@@ -83,6 +78,11 @@ The shader currently assumes that the following textures are in these slots:
 1. BaseColor
 2. MetalRoughness
 3. Normals (not currently supported)
+
+## Running tests
+```bash
+python setup.py test
+```
 
 ## License
 [B3D 3-Clause](https://choosealicense.com/licenses/bsd-3-clause/)
