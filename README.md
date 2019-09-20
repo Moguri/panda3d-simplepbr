@@ -1,5 +1,5 @@
 ![Build Status](https://github.com/Moguri/panda3d-simplepbr/workflows/Pipeline/badge.svg)
-[![](https://img.shields.io/pypi/pyversions/panda3d_gltf.svg)](https://pypi.org/project/panda3d_gltf/)
+[![](https://img.shields.io/pypi/pyversions/panda3d_simplepbr.svg)](https://pypi.org/project/panda3d_simplepbr/)
 [![Panda3D Versions](https://img.shields.io/badge/panda3d-1.10%20%7C%201.11-blue.svg)](https://www.panda3d.org/)
 [![](https://img.shields.io/github/license/Moguri/panda3d-simplepbr.svg)](https://choosealicense.com/licenses/bsd-3-clause/)
 
