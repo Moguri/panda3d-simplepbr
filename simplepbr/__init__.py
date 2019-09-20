@@ -51,13 +51,18 @@ def init(*, render_node=None, window=None, camera_node=None):
 
     # Tonemapping
     manager = FilterManager(window, camera_node)
-    tonemap_tex = p3d.Texture()
-    tonemap_tex.set_component_type(p3d.Texture.T_float)
-    tonemap_quad = manager.render_scene_into(colortex=tonemap_tex)
+    fbprops = p3d.FrameBufferProperties()
+    fbprops.float_color = True
+    fbprops.set_rgba_bits(16, 16, 16, 16)
+    fbprops.set_depth_bits(24)
+    scene_tex = p3d.Texture()
+    scene_tex.set_format(p3d.Texture.F_rgba16)
+    scene_tex.set_component_type(p3d.Texture.T_float)
+    tonemap_quad = manager.render_scene_into(colortex=scene_tex, fbprops=fbprops)
     tonemap_shader = p3d.Shader.load(
         p3d.Shader.SL_GLSL,
         vertex=os.path.join(shader_dir, 'post.vert'),
         fragment=os.path.join(shader_dir, 'tonemap.frag')
     )
     tonemap_quad.set_shader(tonemap_shader)
-    tonemap_quad.set_shader_input('tex', tonemap_tex)
+    tonemap_quad.set_shader_input('tex', scene_tex)
