@@ -12,7 +12,33 @@ __all__ = [
 ]
 
 
-def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4):
+
+def _add_shader_defines(shaderstr, defines):
+    shaderlines = shaderstr.split('\n')
+
+    for line in shaderlines:
+        if '#version' in line:
+            version_line = line
+            break
+    else:
+        raise RuntimeError('Failed to find GLSL version string')
+    shaderlines.remove(version_line)
+
+
+    define_lines = [
+        f'#define {define} {value}'
+        for define, value in defines.items()
+    ]
+
+    return '\n'.join(
+        [version_line]
+        + define_lines
+        + ['#line 1']
+        + shaderlines
+    )
+
+
+def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max_lights=8):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
     :type render_node: `panda3d.core.NodePath`
@@ -40,7 +66,11 @@ def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4):
     with open(os.path.join(shader_dir, 'simplepbr.vert')) as vertfile:
         pbr_vert_str = vertfile.read()
     with open(os.path.join(shader_dir, 'simplepbr.frag')) as fragfile:
-        pbr_frag_str = fragfile.read()
+        pbr_frag_defines = {
+            'MAX_LIGHTS': max_lights,
+        }
+        pbr_frag_str = _add_shader_defines(fragfile.read(), pbr_frag_defines)
+        print(pbr_frag_str)
 
     pbrshader = p3d.Shader.make(
         p3d.Shader.SL_GLSL,
