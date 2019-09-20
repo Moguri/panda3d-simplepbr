@@ -12,7 +12,7 @@ __all__ = [
 ]
 
 
-def init(*, render_node=None, window=None, camera_node=None):
+def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
     :type render_node: `panda3d.core.NodePath`
@@ -55,6 +55,7 @@ def init(*, render_node=None, window=None, camera_node=None):
     fbprops.float_color = True
     fbprops.set_rgba_bits(16, 16, 16, 16)
     fbprops.set_depth_bits(24)
+    fbprops.set_multisamples(msaa_samples)
     scene_tex = p3d.Texture()
     scene_tex.set_format(p3d.Texture.F_rgba16)
     scene_tex.set_component_type(p3d.Texture.T_float)
