@@ -92,8 +92,8 @@ def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max
     tonemap_quad = manager.render_scene_into(colortex=scene_tex, fbprops=fbprops)
     tonemap_shader = p3d.Shader.load(
         p3d.Shader.SL_GLSL,
-        vertex=os.path.join(shader_dir, 'post.vert'),
-        fragment=os.path.join(shader_dir, 'tonemap.frag')
+        vertex=p3d.Filename.from_os_specific(os.path.join(shader_dir, 'post.vert')),
+        fragment=p3d.Filename.from_os_specific(os.path.join(shader_dir, 'tonemap.frag'))
     )
     tonemap_quad.set_shader(tonemap_shader)
     tonemap_quad.set_shader_input('tex', scene_tex)
