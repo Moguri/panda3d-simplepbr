@@ -70,7 +70,6 @@ def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max
             'MAX_LIGHTS': max_lights,
         }
         pbr_frag_str = _add_shader_defines(fragfile.read(), pbr_frag_defines)
-        print(pbr_frag_str)
 
     pbrshader = p3d.Shader.make(
         p3d.Shader.SL_GLSL,
