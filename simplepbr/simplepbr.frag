@@ -45,6 +45,7 @@ uniform sampler2D p3d_Texture1;
 const vec3 F0 = vec3(0.04);
 const float MIN_ROUGHNESS = 0.04;
 const float PI = 3.141592653589793;
+const float SPOTSMOOTH = 0.001;
 
 varying vec3 v_position;
 varying vec3 v_normal;
@@ -99,29 +100,29 @@ void main() {
         vec3 h = normalize(l + v);
         vec3 r = -normalize(reflect(l, n));
         float spotcos = dot(normalize(p3d_LightSource[i].spotDirection), -l);
+        float spotcutoff = p3d_LightSource[i].spotCosCutoff;
+        float shadow = smoothstep(spotcutoff-SPOTSMOOTH, spotcutoff+SPOTSMOOTH, spotcos);
 
-        if (spotcos >= p3d_LightSource[i].spotCosCutoff) {
-            FunctionParamters func_params;
-            func_params.n_dot_l = clamp(dot(n, l), 0.001, 1.0);
-            func_params.n_dot_v = clamp(abs(dot(n, v)), 0.001, 1.0);
-            func_params.n_dot_h = clamp(dot(n, h), 0.0, 1.0);
-            func_params.l_dot_h = clamp(dot(l, h), 0.0, 1.0);
-            func_params.v_dot_h = clamp(dot(v, h), 0.0, 1.0);
-            func_params.roughness = roughness;
-            func_params.metallic =  metallic;
-            func_params.reflection0 = spec_color;
-            func_params.reflection90 = reflection90;
-            func_params.diffuse_color = diffuse_color;
-            func_params.specular_color = spec_color;
+        FunctionParamters func_params;
+        func_params.n_dot_l = clamp(dot(n, l), 0.001, 1.0);
+        func_params.n_dot_v = clamp(abs(dot(n, v)), 0.001, 1.0);
+        func_params.n_dot_h = clamp(dot(n, h), 0.0, 1.0);
+        func_params.l_dot_h = clamp(dot(l, h), 0.0, 1.0);
+        func_params.v_dot_h = clamp(dot(v, h), 0.0, 1.0);
+        func_params.roughness = roughness;
+        func_params.metallic =  metallic;
+        func_params.reflection0 = spec_color;
+        func_params.reflection90 = reflection90;
+        func_params.diffuse_color = diffuse_color;
+        func_params.specular_color = spec_color;
 
-            vec3 F = specular_reflection(func_params);
-            float G = geometric_occlusion(func_params);
-            float D = microfacet_distribution(func_params);
+        vec3 F = specular_reflection(func_params);
+        float G = geometric_occlusion(func_params);
+        float D = microfacet_distribution(func_params);
 
-            vec3 diffuse_contrib = (1.0 - F) * diffuse_function(func_params);
-            vec3 spec_contrib = vec3(F * G * D / (4.0 * func_params.n_dot_l * func_params.n_dot_v));
-            color.rgb += func_params.n_dot_l * p3d_LightSource[i].diffuse.rgb * (diffuse_contrib + spec_contrib);
-        }
+        vec3 diffuse_contrib = (1.0 - F) * diffuse_function(func_params);
+        vec3 spec_contrib = vec3(F * G * D / (4.0 * func_params.n_dot_l * func_params.n_dot_v));
+        color.rgb += func_params.n_dot_l * p3d_LightSource[i].diffuse.rgb * (diffuse_contrib + spec_contrib) * shadow;
     }
 
     gl_FragColor = color;
