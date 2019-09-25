@@ -25,6 +25,10 @@ uniform struct {
     //mat4 shadowMatrix;
 } p3d_LightSource[MAX_LIGHTS];
 
+uniform struct {
+    vec4 ambient;
+} p3d_LightModel;
+
 struct FunctionParamters {
     float n_dot_l;
     float n_dot_v;
@@ -137,8 +141,10 @@ void main() {
 
         vec3 diffuse_contrib = (1.0 - F) * diffuse_function(func_params);
         vec3 spec_contrib = vec3(F * V * D);
-        color.rgb += func_params.n_dot_l * p3d_LightSource[i].diffuse.rgb * (diffuse_contrib + spec_contrib) * shadow;
+        color.rgb += func_params.n_dot_l * lightcol * (diffuse_contrib + spec_contrib) * shadow;
     }
+
+    color.rgb += p3d_LightModel.ambient.rgb;
 
     gl_FragColor = color;
 }
