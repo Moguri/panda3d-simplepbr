@@ -38,6 +38,18 @@ def _add_shader_defines(shaderstr, defines):
     )
 
 
+def _load_shader_str(shaderpath, defines=None):
+    shader_dir = os.path.dirname(__file__)
+
+    with open(os.path.join(shader_dir, shaderpath)) as shaderfile:
+        shaderstr = shaderfile.read()
+
+    if defines is not None:
+        shaderstr = _add_shader_defines(shaderstr, defines)
+
+    return shaderstr
+
+
 def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max_lights=8):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
@@ -57,20 +69,15 @@ def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max
     if camera_node is None:
         camera_node = base.cam
 
-    shader_dir = os.path.dirname(__file__)
 
     # Do not force power-of-two textures
     p3d.Texture.set_textures_power_2(p3d.ATS_none)
 
     # PBR shader
-    with open(os.path.join(shader_dir, 'simplepbr.vert')) as vertfile:
-        pbr_vert_str = vertfile.read()
-    with open(os.path.join(shader_dir, 'simplepbr.frag')) as fragfile:
-        pbr_frag_defines = {
-            'MAX_LIGHTS': max_lights,
-        }
-        pbr_frag_str = _add_shader_defines(fragfile.read(), pbr_frag_defines)
-
+    pbr_vert_str = _load_shader_str('simplepbr.vert')
+    pbr_frag_str = _load_shader_str('simplepbr.frag', {
+        'MAX_LIGHTS': max_lights,
+    })
     pbrshader = p3d.Shader.make(
         p3d.Shader.SL_GLSL,
         vertex=pbr_vert_str,
@@ -89,10 +96,13 @@ def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max
     scene_tex.set_format(p3d.Texture.F_rgba16)
     scene_tex.set_component_type(p3d.Texture.T_float)
     tonemap_quad = manager.render_scene_into(colortex=scene_tex, fbprops=fbprops)
-    tonemap_shader = p3d.Shader.load(
+
+    post_vert_str = _load_shader_str('post.vert')
+    post_frag_str = _load_shader_str('tonemap.frag')
+    tonemap_shader = p3d.Shader.make(
         p3d.Shader.SL_GLSL,
-        vertex=p3d.Filename.from_os_specific(os.path.join(shader_dir, 'post.vert')),
-        fragment=p3d.Filename.from_os_specific(os.path.join(shader_dir, 'tonemap.frag'))
+        vertex=post_vert_str,
+        fragment=post_frag_str,
     )
     tonemap_quad.set_shader(tonemap_shader)
     tonemap_quad.set_shader_input('tex', scene_tex)
