@@ -57,28 +57,36 @@ varying vec2 v_texcoord;
 #define p3d_TextureMetalRoughness p3d_Texture1
 #define p3d_TextureNormals p3d_Texture2
 
+// Schlick's Fresnel approximation
 vec3 specular_reflection(FunctionParamters func_params) {
     return func_params.reflection0 + (func_params.reflection90 - func_params.reflection0) * pow(clamp(1.0 - func_params.v_dot_h, 0.0, 1.0), 5.0);
 }
 
-float geometric_occlusion(FunctionParamters func_params) {
-{
+// Smith GGX with optional fast sqrt approximation (see https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg))
+float visibility_occlusion(FunctionParamters func_params) {
+    float r = func_params.roughness;
+    float r2 = r * r;
     float n_dot_l = func_params.n_dot_l;
     float n_dot_v = func_params.n_dot_v;
-    float r = func_params.roughness;
+#ifdef SMITH_SQRT_APPROX
+    float ggxv = n_dot_l * (n_dot_v * (1.0 - r) + r);
+    float ggxl = n_dot_v * (n_dot_l * (1.0 - r) + r);
+#else
+    float ggxv = n_dot_l * sqrt(n_dot_v * n_dot_v * (1.0 - r2) + r2);
+    float ggxl = n_dot_v * sqrt(n_dot_l * n_dot_l * (1.0 - r2) + r2);
+#endif
 
-    float attenuationL = 2.0 * n_dot_l / (n_dot_l + sqrt(r * r + (1.0 - r * r) * (n_dot_l * n_dot_l)));
-    float attenuationV = 2.0 * n_dot_v / (n_dot_v + sqrt(r * r + (1.0 - r * r) * (n_dot_v * n_dot_v)));
-    return attenuationL * attenuationV;
-}
+    return max(0.0, 0.5 / (ggxv + ggxl));
 }
 
+// GGX/Trowbridge-Reitz
 float microfacet_distribution(FunctionParamters func_params) {
     float roughness2 = func_params.roughness * func_params.roughness;
     float f = (func_params.n_dot_h * roughness2 - func_params.n_dot_h) * func_params.n_dot_h + 1.0;
     return roughness2 / (PI * f * f);
 }
 
+// Lambert
 vec3 diffuse_function(FunctionParamters func_params) {
     return func_params.diffuse_color / PI;
 }
@@ -124,11 +132,11 @@ void main() {
         func_params.specular_color = spec_color;
 
         vec3 F = specular_reflection(func_params);
-        float G = geometric_occlusion(func_params);
+        float V = visibility_occlusion(func_params); // V = G / (4 * n_dot_l * n_dot_v)
         float D = microfacet_distribution(func_params);
 
         vec3 diffuse_contrib = (1.0 - F) * diffuse_function(func_params);
-        vec3 spec_contrib = vec3(F * G * D / (4.0 * func_params.n_dot_l * func_params.n_dot_v));
+        vec3 spec_contrib = vec3(F * V * D);
         color.rgb += func_params.n_dot_l * p3d_LightSource[i].diffuse.rgb * (diffuse_contrib + spec_contrib) * shadow;
     }
 
