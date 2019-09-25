@@ -46,6 +46,7 @@ const vec3 F0 = vec3(0.04);
 const float MIN_ROUGHNESS = 0.04;
 const float PI = 3.141592653589793;
 const float SPOTSMOOTH = 0.001;
+const float LIGHT_CUTOFF = 0.001;
 
 varying vec3 v_position;
 varying vec3 v_normal;
@@ -96,6 +97,12 @@ void main() {
     vec4 color = vec4(0.0);
 
     for (int i = 0; i < p3d_LightSource.length(); ++i) {
+        vec3 lightcol = p3d_LightSource[i].diffuse.rgb;
+
+        if (dot(lightcol, lightcol) < LIGHT_CUTOFF) {
+            continue;
+        }
+
         vec3 l = normalize(p3d_LightSource[i].position.xyz - v_position * p3d_LightSource[i].position.w);
         vec3 h = normalize(l + v);
         vec3 r = -normalize(reflect(l, n));
