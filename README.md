@@ -70,6 +70,10 @@ The `init()` function will choose typical defaults, but the following can be mod
 : The window to attach the framebuffer too, defaults to `base.win` if `None`
 `camera_node`
 : The NodePath of the camera to use when rendering the scene, defaults to `base.cam` if `None`
+`msaa_samples`
+: The number of samples to use for multisample anti-aliasing, defaults to 4
+`max_lights`
+: The maximum number of lights to render, defaults to 8
 `use_normal_maps`
 : Use normal maps to modify fragment normals, defaults to `False` (NOTE: Requires models with appropriate tangents defined)
 

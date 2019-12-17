@@ -58,6 +58,10 @@ def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max
     :type window: `panda3d.core.GraphicsOutput
     :param camera_node: The NodePath of the camera to use when rendering the scene, defaults to `base.cam` if `None`
     :type camera_node: `panda3d.core.NodePath
+    :param msaa_samples: The number of samples to use for multisample anti-aliasing, defaults to 4
+    :type msaa_samples: int
+    :param max_lights: The maximum number of lights to render, defaults to 8
+    :type max_lights: int
     :param use_normal_maps: Use normal maps, defaults to `False` (NOTE: Requires models with appropriate tangents)
     :type use_normal_maps: bool
     '''
