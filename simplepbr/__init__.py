@@ -50,7 +50,7 @@ def _load_shader_str(shaderpath, defines=None):
     return shaderstr
 
 
-def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max_lights=8):
+def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max_lights=8, use_normal_maps=False):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
     :type render_node: `panda3d.core.NodePath`
@@ -58,6 +58,8 @@ def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max
     :type window: `panda3d.core.GraphicsOutput
     :param camera_node: The NodePath of the camera to use when rendering the scene, defaults to `base.cam` if `None`
     :type camera_node: `panda3d.core.NodePath
+    :param use_normal_maps: Use normal maps, defaults to `False` (NOTE: Requires models with appropriate tangents)
+    :type use_normal_maps: bool
     '''
 
     if render_node is None:
@@ -74,10 +76,14 @@ def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max
     p3d.Texture.set_textures_power_2(p3d.ATS_none)
 
     # PBR shader
-    pbr_vert_str = _load_shader_str('simplepbr.vert')
-    pbr_frag_str = _load_shader_str('simplepbr.frag', {
+    pbr_defines = {
         'MAX_LIGHTS': max_lights,
-    })
+    }
+    if use_normal_maps:
+        pbr_defines['USE_NORMAL_MAP'] = ''
+
+    pbr_vert_str = _load_shader_str('simplepbr.vert', pbr_defines)
+    pbr_frag_str = _load_shader_str('simplepbr.frag', pbr_defines)
     pbrshader = p3d.Shader.make(
         p3d.Shader.SL_GLSL,
         vertex=pbr_vert_str,

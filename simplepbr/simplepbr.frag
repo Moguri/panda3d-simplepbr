@@ -43,8 +43,14 @@ struct FunctionParamters {
     vec3 specular_color;
 };
 
-uniform sampler2D p3d_Texture0;
-uniform sampler2D p3d_Texture1;
+// Give texture slots names
+#define p3d_TextureBaseColor p3d_Texture0
+#define p3d_TextureMetalRoughness p3d_Texture1
+#define p3d_TextureNormal p3d_Texture2
+
+uniform sampler2D p3d_TextureBaseColor;
+uniform sampler2D p3d_TextureMetalRoughness;
+uniform sampler2D p3d_TextureNormal;
 
 const vec3 F0 = vec3(0.04);
 const float MIN_ROUGHNESS = 0.04;
@@ -53,13 +59,8 @@ const float SPOTSMOOTH = 0.001;
 const float LIGHT_CUTOFF = 0.001;
 
 varying vec3 v_position;
-varying vec3 v_normal;
 varying vec2 v_texcoord;
-
-// Give texture slots names
-#define p3d_TextureBaseColor p3d_Texture0
-#define p3d_TextureMetalRoughness p3d_Texture1
-#define p3d_TextureNormals p3d_Texture2
+varying mat3 v_tbn;
 
 // Schlick's Fresnel approximation
 vec3 specular_reflection(FunctionParamters func_params) {
@@ -103,7 +104,11 @@ void main() {
     vec3 diffuse_color = (base_color.rgb * (vec3(1.0) - F0)) * (1.0 - metallic);
     vec3 spec_color = mix(F0, base_color.rgb, metallic);
     vec3 reflection90 = vec3(clamp(max(max(spec_color.r, spec_color.g), spec_color.b) * 25.0, 0.0, 1.0));
-    vec3 n = v_normal;
+#ifdef USE_NORMAL_MAP
+    vec3 n = normalize(v_tbn * (2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0));
+#else
+    vec3 n = v_tbn[2];
+#endif
     vec3 v = normalize(-v_position);
 
     vec4 color = vec4(0.0);

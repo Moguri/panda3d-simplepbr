@@ -15,11 +15,11 @@ The PBR shader is heavily inspired by the [Khronos glTF Sample Viewer](https://g
 * Forward rendered metal-rough PBR
 * All Panda3D light types except ambient (point, directional, and spot)
 * Filmic tonemapping 
+* Normal maps
 
 ## Notable Todos
 There are a few big things still missing and are planned to be implemented:
 
-* Normals
 * Shadow mapping
 * Environment maps
 
@@ -70,6 +70,8 @@ The `init()` function will choose typical defaults, but the following can be mod
 : The window to attach the framebuffer too, defaults to `base.win` if `None`
 `camera_node`
 : The NodePath of the camera to use when rendering the scene, defaults to `base.cam` if `None`
+`use_normal_maps`
+: Use normal maps to modify fragment normals, defaults to `False` (NOTE: Requires models with appropriate tangents defined)
 
 ### Textures
 
@@ -77,7 +79,7 @@ The shader currently assumes that the following textures are in these slots:
 
 0. BaseColor
 1. MetalRoughness
-2. Normals (not currently supported)
+2. Normals
 
 ## Example
 
