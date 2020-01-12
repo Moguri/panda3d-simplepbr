@@ -53,7 +53,6 @@ uniform sampler2D p3d_TextureMetalRoughness;
 uniform sampler2D p3d_TextureNormal;
 
 const vec3 F0 = vec3(0.04);
-const float MIN_ROUGHNESS = 0.04;
 const float PI = 3.141592653589793;
 const float SPOTSMOOTH = 0.001;
 const float LIGHT_CUTOFF = 0.001;
@@ -98,12 +97,13 @@ vec3 diffuse_function(FunctionParamters func_params) {
 
 void main() {
     vec4 metal_rough = texture2D(p3d_TextureMetalRoughness, v_texcoord);
-    float metallic = clamp(p3d_Material.metallic * metal_rough.g, 0.0, 1.0);
-    float roughness = clamp(p3d_Material.roughness * metal_rough.b,  MIN_ROUGHNESS, 1.0);
+    float metallic = clamp(p3d_Material.metallic * metal_rough.b, 0.0, 1.0);
+    float perceptual_roughness = clamp(p3d_Material.roughness * metal_rough.g,  0.0, 1.0);
+    float alpha_roughness = perceptual_roughness * perceptual_roughness;
     vec4 base_color = p3d_Material.baseColor * texture2D(p3d_TextureBaseColor, v_texcoord);
     vec3 diffuse_color = (base_color.rgb * (vec3(1.0) - F0)) * (1.0 - metallic);
     vec3 spec_color = mix(F0, base_color.rgb, metallic);
-    vec3 reflection90 = vec3(clamp(max(max(spec_color.r, spec_color.g), spec_color.b) * 25.0, 0.0, 1.0));
+    vec3 reflection90 = vec3(clamp(max(max(spec_color.r, spec_color.g), spec_color.b) * 50.0, 0.0, 1.0));
 #ifdef USE_NORMAL_MAP
     vec3 n = normalize(v_tbn * (2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0));
 #else
@@ -133,7 +133,7 @@ void main() {
         func_params.n_dot_h = clamp(dot(n, h), 0.0, 1.0);
         func_params.l_dot_h = clamp(dot(l, h), 0.0, 1.0);
         func_params.v_dot_h = clamp(dot(v, h), 0.0, 1.0);
-        func_params.roughness = roughness;
+        func_params.roughness = alpha_roughness;
         func_params.metallic =  metallic;
         func_params.reflection0 = spec_color;
         func_params.reflection90 = reflection90;
