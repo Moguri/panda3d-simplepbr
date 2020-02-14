@@ -1,11 +1,11 @@
-import sys 
+import sys
 
 import simplepbr
 
-from panda3d.core import NodePath
-from panda3d.core import PointLight
+from panda3d.core import NodePath  # noqa
+from panda3d.core import PointLight  # noqa
 
-from direct.showbase.ShowBase import ShowBase 
+from direct.showbase.ShowBase import ShowBase
 
 
 class SimplePbrDemo(ShowBase):
@@ -16,8 +16,8 @@ class SimplePbrDemo(ShowBase):
         self.accept('escape', sys.exit)
         self.accept('f11', self.debug)
 
-        m = loader.load_model("pbrcube.bam")
-        m.reparent_to(render)
+        model = loader.load_model("pbrcube.bam")
+        model.reparent_to(render)
 
         # Camera
         self.cam_gimbal = NodePath('gimbal')
