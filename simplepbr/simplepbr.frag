@@ -106,11 +106,12 @@ void main() {
     vec3 n = v_normal;
     vec3 v = normalize(-v_position);
 
-    vec4 color = vec4(0.0);
+    vec4 color = vec4(0.0); // Accumulates reflections from lights
 
     for (int i = 0; i < p3d_LightSource.length(); ++i) {
         vec3 lightcol = p3d_LightSource[i].diffuse.rgb;
 
+        // Ignore lights that are too weak.
         if (dot(lightcol, lightcol) < LIGHT_CUTOFF) {
             continue;
         }
@@ -129,7 +130,7 @@ void main() {
         func_params.l_dot_h = clamp(dot(l, h), 0.0, 1.0);
         func_params.v_dot_h = clamp(dot(v, h), 0.0, 1.0);
         func_params.roughness = roughness;
-        func_params.metallic =  metallic;
+        func_params.metallic = metallic;
         func_params.reflection0 = spec_color;
         func_params.reflection90 = reflection90;
         func_params.diffuse_color = diffuse_color;
@@ -144,6 +145,7 @@ void main() {
         color.rgb += func_params.n_dot_l * lightcol * (diffuse_contrib + spec_contrib) * shadow;
     }
 
+    // Ambient light
     color.rgb += p3d_LightModel.ambient.rgb;
 
     gl_FragColor = color;
