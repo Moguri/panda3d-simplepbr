@@ -111,7 +111,7 @@ void main() {
 #endif
     vec3 v = normalize(-v_position);
 
-    vec4 color = vec4(0.0);
+    vec4 color = vec4(vec3(0.0), base_color.a);
 
     for (int i = 0; i < p3d_LightSource.length(); ++i) {
         vec3 lightcol = p3d_LightSource[i].diffuse.rgb;
