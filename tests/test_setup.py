@@ -4,6 +4,7 @@ import pytest #pylint:disable=wrong-import-order
 import simplepbr
 
 #pylint:disable=redefined-outer-name
+#pylint:disable=import-outside-toplevel
 
 
 @pytest.fixture(scope='session')
