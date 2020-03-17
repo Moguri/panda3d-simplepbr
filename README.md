@@ -89,6 +89,24 @@ The shader currently assumes that the following textures are in these slots:
 
 For an example application using `panda3d-simplepbr` check out the [viewer](https://github.com/Moguri/panda3d-gltf/blob/master/gltf/viewer.py) in the [panda3d-gltf repo](https://github.com/Moguri/panda3d-gltf).
 
+## Distributing
+
+When using Panda3D's `build_apps` the data files (i.e., shader files) will not be copied by default.
+Options are being explored to make this more automatic, but for the time being, add the following to `setup.py`:
+
+```python
+setup(
+    # ...
+    'package_data_dirs': {
+        'simplepbr': [
+            ('simplepbr/*.vert', '', {}),
+            ('simplepbr/*.frag', '', {}),
+         ],
+     }
+     # ...
+)
+```
+
 ## Running tests
 ```bash
 python setup.py test
