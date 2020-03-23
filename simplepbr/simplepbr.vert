@@ -12,7 +12,6 @@ attribute vec2 p3d_MultiTexCoord0;
 
 varying vec3 v_position;
 varying vec3 v_normal;
-varying vec3 v_tangent;
 varying mat3 v_tbn;
 varying vec2 v_texcoord;
 
