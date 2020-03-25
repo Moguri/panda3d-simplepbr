@@ -6,14 +6,14 @@
     #define MAX_LIGHTS 8
 #endif
 
-uniform struct {
+uniform struct p3d_MaterialParameters {
     vec4 baseColor;
     float roughness;
     float metallic;
     float refractiveIndex;
 } p3d_Material;
 
-uniform struct {
+uniform struct p3d_LightSourceParameters {
     vec4 position;
     vec4 diffuse;
     vec4 specular;
@@ -25,7 +25,7 @@ uniform struct {
     //mat4 shadowMatrix;
 } p3d_LightSource[MAX_LIGHTS];
 
-uniform struct {
+uniform struct p3d_LightModelParameters {
     vec4 ambient;
 } p3d_LightModel;
 
