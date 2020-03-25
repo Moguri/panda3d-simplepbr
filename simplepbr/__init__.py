@@ -9,6 +9,7 @@ from .version import __version__
 
 __all__ = [
     'init',
+    'Pipeline'
 ]
 
 
@@ -49,6 +50,92 @@ def _load_shader_str(shaderpath, defines=None):
 
     return shaderstr
 
+class Pipeline:
+    def __init__(
+            self,
+            *,
+            render_node=None,
+            window=None,
+            camera_node=None,
+            msaa_samples=4,
+            max_lights=8,
+            use_normal_maps=False,
+            exposure=1.0
+    ):
+        if render_node is None:
+            render_node = base.render
+
+        if window is None:
+            window = base.win
+
+        if camera_node is None:
+            camera_node = base.cam
+
+        self._shader_ready = False
+        self.render_node = render_node
+        self.window = window
+        self.camera_node = camera_node
+        self.max_lights = max_lights
+        self.use_normal_maps = use_normal_maps
+        self.exposure = exposure
+
+        # Do not force power-of-two textures
+        p3d.Texture.set_textures_power_2(p3d.ATS_none)
+
+        # PBR Shader
+        self._recompile_pbr()
+
+        # Tonemapping
+        manager = FilterManager(window, camera_node)
+        fbprops = p3d.FrameBufferProperties()
+        fbprops.float_color = True
+        fbprops.set_rgba_bits(16, 16, 16, 16)
+        fbprops.set_depth_bits(24)
+        fbprops.set_multisamples(msaa_samples)
+        scene_tex = p3d.Texture()
+        scene_tex.set_format(p3d.Texture.F_rgba16)
+        scene_tex.set_component_type(p3d.Texture.T_float)
+        self.tonemap_quad = manager.render_scene_into(colortex=scene_tex, fbprops=fbprops)
+
+        post_vert_str = _load_shader_str('post.vert')
+        post_frag_str = _load_shader_str('tonemap.frag')
+        tonemap_shader = p3d.Shader.make(
+            p3d.Shader.SL_GLSL,
+            vertex=post_vert_str,
+            fragment=post_frag_str,
+        )
+        self.tonemap_quad.set_shader(tonemap_shader)
+        self.tonemap_quad.set_shader_input('tex', scene_tex)
+        self.tonemap_quad.set_shader_input('exposure', exposure)
+
+        self._shader_ready = True
+
+    def __setattr__(self, name, value):
+        super().__setattr__(name, value)
+        if not self._shader_ready:
+            return
+
+        if name in ['max_lights', 'use_normal_maps'] and getattr(self, name) != value:
+            self._recompile_pbr()
+        elif name == 'exposure':
+            self.tonemap_quad.set_shader_input('exposure', self.exposure)
+
+    def _recompile_pbr(self):
+        pbr_defines = {
+            'MAX_LIGHTS': self.max_lights,
+        }
+        if self.use_normal_maps:
+            pbr_defines['USE_NORMAL_MAP'] = ''
+
+        pbr_vert_str = _load_shader_str('simplepbr.vert', pbr_defines)
+        pbr_frag_str = _load_shader_str('simplepbr.frag', pbr_defines)
+        pbrshader = p3d.Shader.make(
+            p3d.Shader.SL_GLSL,
+            vertex=pbr_vert_str,
+            fragment=pbr_frag_str,
+        )
+        self.render_node.set_shader(pbrshader)
+
 
 def init(*,
          render_node=None,
@@ -76,54 +163,12 @@ def init(*,
     :type exposure: float
     '''
 
-    if render_node is None:
-        render_node = base.render
-
-    if window is None:
-        window = base.win
-
-    if camera_node is None:
-        camera_node = base.cam
-
-
-    # Do not force power-of-two textures
-    p3d.Texture.set_textures_power_2(p3d.ATS_none)
-
-    # PBR shader
-    pbr_defines = {
-        'MAX_LIGHTS': max_lights,
-    }
-    if use_normal_maps:
-        pbr_defines['USE_NORMAL_MAP'] = ''
-
-    pbr_vert_str = _load_shader_str('simplepbr.vert', pbr_defines)
-    pbr_frag_str = _load_shader_str('simplepbr.frag', pbr_defines)
-    pbrshader = p3d.Shader.make(
-        p3d.Shader.SL_GLSL,
-        vertex=pbr_vert_str,
-        fragment=pbr_frag_str,
+    return Pipeline(
+        render_node=render_node,
+        window=window,
+        camera_node=camera_node,
+        msaa_samples=msaa_samples,
+        max_lights=max_lights,
+        use_normal_maps=use_normal_maps,
+        exposure=exposure
     )
-    render_node.set_shader(pbrshader)
-
-    # Tonemapping
-    manager = FilterManager(window, camera_node)
-    fbprops = p3d.FrameBufferProperties()
-    fbprops.float_color = True
-    fbprops.set_rgba_bits(16, 16, 16, 16)
-    fbprops.set_depth_bits(24)
-    fbprops.set_multisamples(msaa_samples)
-    scene_tex = p3d.Texture()
-    scene_tex.set_format(p3d.Texture.F_rgba16)
-    scene_tex.set_component_type(p3d.Texture.T_float)
-    tonemap_quad = manager.render_scene_into(colortex=scene_tex, fbprops=fbprops)
-
-    post_vert_str = _load_shader_str('post.vert')
-    post_frag_str = _load_shader_str('tonemap.frag')
-    tonemap_shader = p3d.Shader.make(
-        p3d.Shader.SL_GLSL,
-        vertex=post_vert_str,
-        fragment=post_frag_str,
-    )
-    tonemap_quad.set_shader(tonemap_shader)
-    tonemap_quad.set_shader_input('tex', scene_tex)
-    tonemap_quad.set_shader_input('exposure', exposure)
