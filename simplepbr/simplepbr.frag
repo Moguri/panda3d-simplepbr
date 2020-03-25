@@ -29,6 +29,8 @@ uniform struct {
     vec4 ambient;
 } p3d_LightModel;
 
+uniform vec4 p3d_ColorScale;
+
 struct FunctionParamters {
     float n_dot_l;
     float n_dot_v;
@@ -101,7 +103,7 @@ void main() {
     float metallic = clamp(p3d_Material.metallic * metal_rough.b, 0.0, 1.0);
     float perceptual_roughness = clamp(p3d_Material.roughness * metal_rough.g,  0.0, 1.0);
     float alpha_roughness = perceptual_roughness * perceptual_roughness;
-    vec4 base_color = p3d_Material.baseColor * v_color * texture2D(p3d_TextureBaseColor, v_texcoord);
+    vec4 base_color = p3d_Material.baseColor * v_color * p3d_ColorScale * texture2D(p3d_TextureBaseColor, v_texcoord);
     vec3 diffuse_color = (base_color.rgb * (vec3(1.0) - F0)) * (1.0 - metallic);
     vec3 spec_color = mix(F0, base_color.rgb, metallic);
     vec3 reflection90 = vec3(clamp(max(max(spec_color.r, spec_color.g), spec_color.b) * 50.0, 0.0, 1.0));
