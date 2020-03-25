@@ -50,7 +50,15 @@ def _load_shader_str(shaderpath, defines=None):
     return shaderstr
 
 
-def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max_lights=8, use_normal_maps=False):
+def init(*,
+         render_node=None,
+         window=None,
+         camera_node=None,
+         msaa_samples=4,
+         max_lights=8,
+         use_normal_maps=False,
+         exposure=1.0
+         ):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
     :type render_node: `panda3d.core.NodePath`
@@ -64,6 +72,8 @@ def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max
     :type max_lights: int
     :param use_normal_maps: Use normal maps, defaults to `False` (NOTE: Requires models with appropriate tangents)
     :type use_normal_maps: bool
+    :param exposure: a value used to multiply the screen-space color value prior to tonemapping, defaults to 1.0
+    :type exposure: float
     '''
 
     if render_node is None:
@@ -116,3 +126,4 @@ def init(*, render_node=None, window=None, camera_node=None, msaa_samples=4, max
     )
     tonemap_quad.set_shader(tonemap_shader)
     tonemap_quad.set_shader_input('tex', scene_tex)
+    tonemap_quad.set_shader_input('exposure', exposure)

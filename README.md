@@ -76,6 +76,8 @@ The `init()` function will choose typical defaults, but the following can be mod
 : The maximum number of lights to render, defaults to 8
 `use_normal_maps`
 : Use normal maps to modify fragment normals, defaults to `False` (NOTE: Requires models with appropriate tangents defined)
+`exposure`
+: a value used to multiply the screen-space color value prior to tonemapping, defaults to 1.0
 
 ### Textures
 
