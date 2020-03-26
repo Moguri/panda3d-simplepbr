@@ -60,7 +60,8 @@ class Pipeline:
             msaa_samples=4,
             max_lights=8,
             use_normal_maps=False,
-            exposure=1.0
+            exposure=1.0,
+            enable_shadows=False,
     ):
         if render_node is None:
             render_node = base.render
@@ -77,6 +78,7 @@ class Pipeline:
         self.camera_node = camera_node
         self.max_lights = max_lights
         self.use_normal_maps = use_normal_maps
+        self.enable_shadows = enable_shadows
         self.exposure = exposure
 
         # Do not force power-of-two textures
@@ -111,11 +113,20 @@ class Pipeline:
         self._shader_ready = True
 
     def __setattr__(self, name, value):
+        if hasattr(self, name):
+            prev_value = getattr(self, name)
+        else:
+            prev_value = None
         super().__setattr__(name, value)
         if not self._shader_ready:
             return
 
-        if name in ['max_lights', 'use_normal_maps'] and getattr(self, name) != value:
+        pbr_vars = [
+            'max_lights',
+            'use_normal_maps',
+            'enable_shadows',
+        ]
+        if name in pbr_vars and prev_value != value:
             self._recompile_pbr()
         elif name == 'exposure':
             self.tonemap_quad.set_shader_input('exposure', self.exposure)
@@ -126,6 +137,8 @@ class Pipeline:
         }
         if self.use_normal_maps:
             pbr_defines['USE_NORMAL_MAP'] = ''
+        if self.enable_shadows:
+            pbr_defines['ENABLE_SHADOWS'] = ''
 
         pbr_vert_str = _load_shader_str('simplepbr.vert', pbr_defines)
         pbr_frag_str = _load_shader_str('simplepbr.frag', pbr_defines)
@@ -144,7 +157,8 @@ def init(*,
          msaa_samples=4,
          max_lights=8,
          use_normal_maps=False,
-         exposure=1.0
+         exposure=1.0,
+         enable_shadows=False,
          ):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
@@ -161,6 +175,8 @@ def init(*,
     :type use_normal_maps: bool
     :param exposure: a value used to multiply the screen-space color value prior to tonemapping, defaults to 1.0
     :type exposure: float
+    :param enable_shadows: Enable shadow map support (breaks with point lights), defaults to False
+    :type enable_shadows: bool
     '''
 
     return Pipeline(
@@ -170,5 +186,6 @@ def init(*,
         msaa_samples=msaa_samples,
         max_lights=max_lights,
         use_normal_maps=use_normal_maps,
-        exposure=exposure
+        exposure=exposure,
+        enable_shadows=enable_shadows,
     )

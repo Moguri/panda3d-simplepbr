@@ -21,8 +21,10 @@ uniform struct p3d_LightSourceParameters {
     vec3 spotDirection;
     float spotCosCutoff;
     float spotExponent;
-    //sampler2DShadow shadowMap;
-    //mat4 shadowMatrix;
+#ifdef ENABLE_SHADOWS
+    sampler2DShadow shadowMap;
+    mat4 shadowViewMatrix;
+#endif
 } p3d_LightSource[MAX_LIGHTS];
 
 uniform struct p3d_LightModelParameters {
@@ -63,6 +65,9 @@ varying vec3 v_position;
 varying vec4 v_color;
 varying vec2 v_texcoord;
 varying mat3 v_tbn;
+#ifdef ENABLE_SHADOWS
+varying vec4 v_shadow_pos[MAX_LIGHTS];
+#endif
 
 // Schlick's Fresnel approximation
 vec3 specular_reflection(FunctionParamters func_params) {
@@ -128,7 +133,13 @@ void main() {
         vec3 r = -normalize(reflect(l, n));
         float spotcos = dot(normalize(p3d_LightSource[i].spotDirection), -l);
         float spotcutoff = p3d_LightSource[i].spotCosCutoff;
-        float shadow = smoothstep(spotcutoff-SPOTSMOOTH, spotcutoff+SPOTSMOOTH, spotcos);
+        float shadowSpot = smoothstep(spotcutoff-SPOTSMOOTH, spotcutoff+SPOTSMOOTH, spotcos);
+#ifdef ENABLE_SHADOWS
+        float shadowCaster = shadow2DProj(p3d_LightSource[i].shadowMap, v_shadow_pos[i]).r;
+#else
+        float shadowCaster = 1.0;
+#endif
+        float shadow = shadowSpot * shadowCaster;
 
         FunctionParamters func_params;
         func_params.n_dot_l = clamp(dot(n, l), 0.001, 1.0);

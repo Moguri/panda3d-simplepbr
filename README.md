@@ -16,11 +16,12 @@ The PBR shader is heavily inspired by the [Khronos glTF Sample Viewer](https://g
 * All Panda3D light types (point, directional, spot, and ambient)
 * Filmic tonemapping 
 * Normal maps
+* Basic shadow mapping for directional and spot lights
 
 ## Notable Todos
 There are a few big things still missing and are planned to be implemented:
 
-* Shadow mapping
+* Shadow mapping for point lights
 * Environment maps
 
 ## Other missing features
@@ -76,6 +77,8 @@ The `init()` function will choose typical defaults, but the following can be mod
 : The maximum number of lights to render, defaults to 8
 `use_normal_maps`
 : Use normal maps to modify fragment normals, defaults to `False` (NOTE: Requires models with appropriate tangents defined)
+`enable_shadows`
+: Enable shadow map support (breaks with point lights), defaults to False
 `exposure`
 : a value used to multiply the screen-space color value prior to tonemapping, defaults to 1.0
 
