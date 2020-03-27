@@ -79,6 +79,8 @@ The `init()` function will choose typical defaults, but the following can be mod
 : Use normal maps to modify fragment normals, defaults to `False` (NOTE: Requires models with appropriate tangents defined)
 `enable_shadows`
 : Enable shadow map support (breaks with point lights), defaults to False
+`enable_fog`
+: Enable exponential fog, defaults to False
 `exposure`
 : a value used to multiply the screen-space color value prior to tonemapping, defaults to 1.0
 

@@ -62,6 +62,7 @@ class Pipeline:
             use_normal_maps=False,
             exposure=1.0,
             enable_shadows=False,
+            enable_fog=False,
     ):
         if render_node is None:
             render_node = base.render
@@ -79,6 +80,7 @@ class Pipeline:
         self.max_lights = max_lights
         self.use_normal_maps = use_normal_maps
         self.enable_shadows = enable_shadows
+        self.enable_fog = enable_fog
         self.exposure = exposure
 
         # Do not force power-of-two textures
@@ -125,6 +127,7 @@ class Pipeline:
             'max_lights',
             'use_normal_maps',
             'enable_shadows',
+            'enable_fog',
         ]
         if name in pbr_vars and prev_value != value:
             self._recompile_pbr()
@@ -139,6 +142,8 @@ class Pipeline:
             pbr_defines['USE_NORMAL_MAP'] = ''
         if self.enable_shadows:
             pbr_defines['ENABLE_SHADOWS'] = ''
+        if self.enable_fog:
+            pbr_defines['ENABLE_FOG'] = ''
 
         pbr_vert_str = _load_shader_str('simplepbr.vert', pbr_defines)
         pbr_frag_str = _load_shader_str('simplepbr.frag', pbr_defines)
@@ -159,6 +164,7 @@ def init(*,
          use_normal_maps=False,
          exposure=1.0,
          enable_shadows=False,
+         enable_fog=False,
          ):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
@@ -177,6 +183,8 @@ def init(*,
     :type exposure: float
     :param enable_shadows: Enable shadow map support (breaks with point lights), defaults to False
     :type enable_shadows: bool
+    :param enable_fog: Enable exponential fog, defaults to False
+    :type enable_fog: bool
     '''
 
     return Pipeline(
@@ -188,4 +196,5 @@ def init(*,
         use_normal_maps=use_normal_maps,
         exposure=exposure,
         enable_shadows=enable_shadows,
+        enable_fog=enable_fog,
     )

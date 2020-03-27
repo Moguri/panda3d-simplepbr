@@ -31,6 +31,13 @@ uniform struct p3d_LightModelParameters {
     vec4 ambient;
 } p3d_LightModel;
 
+#ifdef ENABLE_FOG
+uniform struct p3d_FogParameters {
+    vec4 color;
+    float density;
+} p3d_Fog;
+#endif
+
 uniform vec4 p3d_ColorScale;
 
 struct FunctionParamters {
@@ -164,6 +171,13 @@ void main() {
     }
 
     color.rgb += p3d_LightModel.ambient.rgb;
+
+#ifdef ENABLE_FOG
+    // Exponential fog
+    float fog_distance = length(v_position);
+    float fog_factor = clamp(1.0 / exp(fog_distance * p3d_Fog.density), 0.0, 1.0);
+    color = mix(p3d_Fog.color, color, fog_factor);
+#endif
 
     gl_FragColor = color;
 }
