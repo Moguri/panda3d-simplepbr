@@ -11,17 +11,17 @@ The PBR shader is heavily inspired by the [Khronos glTF Sample Viewer](https://g
 *Note:* this project does not make an attempt to match a reference renderer.
 
 ## Features
-* Supports running on potatoes with an easy OpenGL 2.1+ requirement
+* Supports running on a wide range of hardware with an easy OpenGL 2.1+ requirement
 * Forward rendered metal-rough PBR
 * All Panda3D light types (point, directional, spot, and ambient)
 * Filmic tonemapping 
 * Normal maps
-* Basic shadow mapping for directional and spot lights
+* Basic shadow mapping for DirectionalLight and Spotlight
 
 ## Notable Todos
 There are a few big things still missing and are planned to be implemented:
 
-* Shadow mapping for point lights
+* Shadow mapping for PointLight
 * Environment maps
 
 ## Other missing features
