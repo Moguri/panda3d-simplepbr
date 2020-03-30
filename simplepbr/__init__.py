@@ -82,6 +82,10 @@ class Pipeline:
         self.enable_shadows = enable_shadows
         self.enable_fog = enable_fog
         self.exposure = exposure
+        self.msaa_samples = msaa_samples
+
+        # Create and monkey-patch a FilterManager instance
+        self.manager = FilterManager(window, camera_node)
 
         # Do not force power-of-two textures
         p3d.Texture.set_textures_power_2(p3d.ATS_none)
@@ -90,27 +94,7 @@ class Pipeline:
         self._recompile_pbr()
 
         # Tonemapping
-        manager = FilterManager(window, camera_node)
-        fbprops = p3d.FrameBufferProperties()
-        fbprops.float_color = True
-        fbprops.set_rgba_bits(16, 16, 16, 16)
-        fbprops.set_depth_bits(24)
-        fbprops.set_multisamples(msaa_samples)
-        scene_tex = p3d.Texture()
-        scene_tex.set_format(p3d.Texture.F_rgba16)
-        scene_tex.set_component_type(p3d.Texture.T_float)
-        self.tonemap_quad = manager.render_scene_into(colortex=scene_tex, fbprops=fbprops)
-
-        post_vert_str = _load_shader_str('post.vert')
-        post_frag_str = _load_shader_str('tonemap.frag')
-        tonemap_shader = p3d.Shader.make(
-            p3d.Shader.SL_GLSL,
-            vertex=post_vert_str,
-            fragment=post_frag_str,
-        )
-        self.tonemap_quad.set_shader(tonemap_shader)
-        self.tonemap_quad.set_shader_input('tex', scene_tex)
-        self.tonemap_quad.set_shader_input('exposure', exposure)
+        self._setup_tonemapping()
 
         self._shader_ready = True
 
@@ -133,6 +117,8 @@ class Pipeline:
             self._recompile_pbr()
         elif name == 'exposure':
             self.tonemap_quad.set_shader_input('exposure', self.exposure)
+        elif name == 'msaa_samples':
+            self._setup_tonemapping()
 
     def _recompile_pbr(self):
         pbr_defines = {
@@ -153,6 +139,43 @@ class Pipeline:
             fragment=pbr_frag_str,
         )
         self.render_node.set_shader(pbrshader)
+
+    def _setup_tonemapping(self):
+        if self._shader_ready:
+            # Destroy previous buffers so we can re-create
+            self.manager.cleanup()
+
+            # Fix shadow buffers after FilterManager.cleanup()
+            for casternp in self.render_node.find_all_matches('**/+LightLensNode'):
+                caster = casternp.node()
+                if caster.is_shadow_caster():
+                    # caster.set_shadow_caster(False)
+                    # caster.set_shadow_caster(True)
+                    sbuff_size = caster.get_shadow_buffer_size()
+                    caster.set_shadow_buffer_size((0, 0))
+                    caster.set_shadow_buffer_size(sbuff_size)
+
+
+        fbprops = p3d.FrameBufferProperties()
+        fbprops.float_color = True
+        fbprops.set_rgba_bits(16, 16, 16, 16)
+        fbprops.set_depth_bits(24)
+        fbprops.set_multisamples(self.msaa_samples)
+        scene_tex = p3d.Texture()
+        scene_tex.set_format(p3d.Texture.F_rgba16)
+        scene_tex.set_component_type(p3d.Texture.T_float)
+        self.tonemap_quad = self.manager.render_scene_into(colortex=scene_tex, fbprops=fbprops)
+
+        post_vert_str = _load_shader_str('post.vert')
+        post_frag_str = _load_shader_str('tonemap.frag')
+        tonemap_shader = p3d.Shader.make(
+            p3d.Shader.SL_GLSL,
+            vertex=post_vert_str,
+            fragment=post_frag_str,
+        )
+        self.tonemap_quad.set_shader(tonemap_shader)
+        self.tonemap_quad.set_shader_input('tex', scene_tex)
+        self.tonemap_quad.set_shader_input('exposure', self.exposure)
 
 
 def init(*,
