@@ -84,11 +84,14 @@ class Pipeline:
         self.exposure = exposure
         self.msaa_samples = msaa_samples
 
-        # Create and monkey-patch a FilterManager instance
+        # Create a FilterManager instance
         self.manager = FilterManager(window, camera_node)
 
         # Do not force power-of-two textures
         p3d.Texture.set_textures_power_2(p3d.ATS_none)
+
+        # Make sure we have AA for if/when MSAA is enabled
+        self.render_node.set_antialias(p3d.AntialiasAttrib.M_auto)
 
         # PBR Shader
         self._recompile_pbr()
