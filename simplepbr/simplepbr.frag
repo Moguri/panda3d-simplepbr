@@ -125,6 +125,11 @@ void main() {
     vec3 n = v_tbn[2];
 #endif
     vec3 v = normalize(-v_position);
+#ifdef USE_OCCLUSION_MAP
+    float ambient_occlusion = metal_rough.r;
+#else
+    float ambient_occlusion = 1.0;
+#endif
 
     vec4 color = vec4(vec3(0.0), base_color.a);
 
@@ -170,7 +175,7 @@ void main() {
         color.rgb += func_params.n_dot_l * lightcol * (diffuse_contrib + spec_contrib) * shadow;
     }
 
-    color.rgb += p3d_LightModel.ambient.rgb;
+    color.rgb += diffuse_color * p3d_LightModel.ambient.rgb * ambient_occlusion;
 
 #ifdef ENABLE_FOG
     // Exponential fog
