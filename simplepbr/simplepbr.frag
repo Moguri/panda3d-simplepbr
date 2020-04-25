@@ -8,6 +8,7 @@
 
 uniform struct p3d_MaterialParameters {
     vec4 baseColor;
+    vec4 emission;
     float roughness;
     float metallic;
     float refractiveIndex;
@@ -58,10 +59,12 @@ struct FunctionParamters {
 #define p3d_TextureBaseColor p3d_Texture0
 #define p3d_TextureMetalRoughness p3d_Texture1
 #define p3d_TextureNormal p3d_Texture2
+#define p3d_TextureEmission p3d_Texture3
 
 uniform sampler2D p3d_TextureBaseColor;
 uniform sampler2D p3d_TextureMetalRoughness;
 uniform sampler2D p3d_TextureNormal;
+uniform sampler2D p3d_TextureEmission;
 
 const vec3 F0 = vec3(0.04);
 const float PI = 3.141592653589793;
@@ -125,10 +128,17 @@ void main() {
     vec3 n = v_tbn[2];
 #endif
     vec3 v = normalize(-v_position);
+
 #ifdef USE_OCCLUSION_MAP
     float ambient_occlusion = metal_rough.r;
 #else
     float ambient_occlusion = 1.0;
+#endif
+
+#ifdef USE_EMISSION_MAP
+	  vec3 emission = p3d_Material.emission.rgb * texture2D(p3d_TextureEmission, v_texcoord).rgb;
+#else
+    vec3 emission = vec3(0.0);
 #endif
 
     vec4 color = vec4(vec3(0.0), base_color.a);
@@ -176,6 +186,7 @@ void main() {
     }
 
     color.rgb += diffuse_color * p3d_LightModel.ambient.rgb * ambient_occlusion;
+    color.rgb += emission;
 
 #ifdef ENABLE_FOG
     // Exponential fog

@@ -60,6 +60,7 @@ class Pipeline:
             msaa_samples=4,
             max_lights=8,
             use_normal_maps=False,
+            use_emission_maps=False,
             exposure=1.0,
             enable_shadows=False,
             enable_fog=False,
@@ -80,6 +81,7 @@ class Pipeline:
         self.camera_node = camera_node
         self.max_lights = max_lights
         self.use_normal_maps = use_normal_maps
+        self.use_emission_maps = use_emission_maps
         self.enable_shadows = enable_shadows
         self.enable_fog = enable_fog
         self.exposure = exposure
@@ -115,6 +117,7 @@ class Pipeline:
         pbr_vars = [
             'max_lights',
             'use_normal_maps',
+            'use_emission_maps',
             'enable_shadows',
             'enable_fog',
             'use_occlusion_maps',
@@ -132,6 +135,8 @@ class Pipeline:
         }
         if self.use_normal_maps:
             pbr_defines['USE_NORMAL_MAP'] = ''
+        if self.use_emission_maps:
+            pbr_defines['USE_EMISSION_MAP'] = ''
         if self.enable_shadows:
             pbr_defines['ENABLE_SHADOWS'] = ''
         if self.enable_fog:
@@ -193,6 +198,7 @@ def init(*,
          msaa_samples=4,
          max_lights=8,
          use_normal_maps=False,
+         use_emission_maps=False,
          exposure=1.0,
          enable_shadows=False,
          enable_fog=False,
@@ -211,6 +217,8 @@ def init(*,
     :type max_lights: int
     :param use_normal_maps: Use normal maps, defaults to `False` (NOTE: Requires models with appropriate tangents)
     :type use_normal_maps: bool
+    :param use_emission_maps: Use emission maps, defaults to `False`
+    :type use_emission_maps: bool
     :param exposure: a value used to multiply the screen-space color value prior to tonemapping, defaults to 1.0
     :type exposure: float
     :param enable_shadows: Enable shadow map support (breaks with point lights), defaults to False
@@ -229,6 +237,7 @@ def init(*,
         msaa_samples=msaa_samples,
         max_lights=max_lights,
         use_normal_maps=use_normal_maps,
+        use_emission_maps=use_emission_maps,
         exposure=exposure,
         enable_shadows=enable_shadows,
         enable_fog=enable_fog,
