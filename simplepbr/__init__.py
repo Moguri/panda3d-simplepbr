@@ -64,6 +64,7 @@ class Pipeline:
             exposure=1.0,
             enable_shadows=False,
             enable_fog=False,
+            use_occlusion_maps=False
     ):
         if render_node is None:
             render_node = base.render
@@ -85,6 +86,7 @@ class Pipeline:
         self.enable_fog = enable_fog
         self.exposure = exposure
         self.msaa_samples = msaa_samples
+        self.use_occlusion_maps = use_occlusion_maps
 
         # Create a FilterManager instance
         self.manager = FilterManager(window, camera_node)
@@ -118,6 +120,7 @@ class Pipeline:
             'use_emission_maps',
             'enable_shadows',
             'enable_fog',
+            'use_occlusion_maps',
         ]
         if name in pbr_vars and prev_value != value:
             self._recompile_pbr()
@@ -138,6 +141,8 @@ class Pipeline:
             pbr_defines['ENABLE_SHADOWS'] = ''
         if self.enable_fog:
             pbr_defines['ENABLE_FOG'] = ''
+        if self.use_occlusion_maps:
+            pbr_defines['USE_OCCLUSION_MAP'] = ''
 
         pbr_vert_str = _load_shader_str('simplepbr.vert', pbr_defines)
         pbr_frag_str = _load_shader_str('simplepbr.frag', pbr_defines)
@@ -197,6 +202,7 @@ def init(*,
          exposure=1.0,
          enable_shadows=False,
          enable_fog=False,
+         use_occlusion_maps=False
          ):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
@@ -219,6 +225,9 @@ def init(*,
     :type enable_shadows: bool
     :param enable_fog: Enable exponential fog, defaults to False
     :type enable_fog: bool
+    :param use_occlusion_maps: Use occlusion maps, defaults to `False` (NOTE: Requires occlusion channel in
+    metal-roughness map)
+    :type use_occlusion_maps: bool
     '''
 
     return Pipeline(
@@ -232,4 +241,5 @@ def init(*,
         exposure=exposure,
         enable_shadows=enable_shadows,
         enable_fog=enable_fog,
+        use_occlusion_maps=use_occlusion_maps
     )

@@ -128,8 +128,15 @@ void main() {
     vec3 n = v_tbn[2];
 #endif
     vec3 v = normalize(-v_position);
+
+#ifdef USE_OCCLUSION_MAP
+    float ambient_occlusion = metal_rough.r;
+#else
+    float ambient_occlusion = 1.0;
+#endif
+
 #ifdef USE_EMISSION_MAP
-	vec3 emission = p3d_Material.emission.rgb * texture2D(p3d_TextureEmission, v_texcoord).rgb;
+	  vec3 emission = p3d_Material.emission.rgb * texture2D(p3d_TextureEmission, v_texcoord).rgb;
 #else
     vec3 emission = vec3(0.0);
 #endif
@@ -178,7 +185,7 @@ void main() {
         color.rgb += func_params.n_dot_l * lightcol * (diffuse_contrib + spec_contrib) * shadow;
     }
 
-    color.rgb += p3d_LightModel.ambient.rgb;
+    color.rgb += diffuse_color * p3d_LightModel.ambient.rgb * ambient_occlusion;
     color.rgb += emission;
 
 #ifdef ENABLE_FOG
