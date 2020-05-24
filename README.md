@@ -134,8 +134,7 @@ setup(
     # ...
     'package_data_dirs': {
         'simplepbr': [
-            ('simplepbr/*.vert', '', {}),
-            ('simplepbr/*.frag', '', {}),
+            ('simplepbr/shaders*', '', {}),
          ],
      }
      # ...

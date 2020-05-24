@@ -40,7 +40,7 @@ def _add_shader_defines(shaderstr, defines):
 
 
 def _load_shader_str(shaderpath, defines=None):
-    shader_dir = os.path.dirname(__file__)
+    shader_dir = os.path.join(os.path.dirname(__file__), 'shaders')
 
     with open(os.path.join(shader_dir, shaderpath)) as shaderfile:
         shaderstr = shaderfile.read()
