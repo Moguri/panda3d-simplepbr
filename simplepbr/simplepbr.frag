@@ -136,7 +136,7 @@ void main() {
 #endif
 
 #ifdef USE_EMISSION_MAP
-	  vec3 emission = p3d_Material.emission.rgb * texture2D(p3d_TextureEmission, v_texcoord).rgb;
+    vec3 emission = p3d_Material.emission.rgb * texture2D(p3d_TextureEmission, v_texcoord).rgb;
 #else
     vec3 emission = vec3(0.0);
 #endif

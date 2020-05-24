@@ -60,7 +60,7 @@ class Pipeline:
             msaa_samples=4,
             max_lights=8,
             use_normal_maps=False,
-            use_emission_maps=False,
+            use_emission_maps=True,
             exposure=1.0,
             enable_shadows=False,
             enable_fog=False,
@@ -198,7 +198,7 @@ def init(*,
          msaa_samples=4,
          max_lights=8,
          use_normal_maps=False,
-         use_emission_maps=False,
+         use_emission_maps=True,
          exposure=1.0,
          enable_shadows=False,
          enable_fog=False,
@@ -217,7 +217,7 @@ def init(*,
     :type max_lights: int
     :param use_normal_maps: Use normal maps, defaults to `False` (NOTE: Requires models with appropriate tangents)
     :type use_normal_maps: bool
-    :param use_emission_maps: Use emission maps, defaults to `False`
+    :param use_emission_maps: Use emission maps, defaults to `True`
     :type use_emission_maps: bool
     :param exposure: a value used to multiply the screen-space color value prior to tonemapping, defaults to 1.0
     :type exposure: float
