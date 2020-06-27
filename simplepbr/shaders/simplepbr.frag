@@ -164,8 +164,8 @@ void main() {
         float shadow = shadowSpot * shadowCaster;
 
         FunctionParamters func_params;
-        func_params.n_dot_l = clamp(dot(n, l), 0.001, 1.0);
-        func_params.n_dot_v = clamp(abs(dot(n, v)), 0.001, 1.0);
+        func_params.n_dot_l = clamp(dot(n, l), 0.0, 1.0);
+        func_params.n_dot_v = clamp(abs(dot(n, v)), 0.0, 1.0);
         func_params.n_dot_h = clamp(dot(n, h), 0.0, 1.0);
         func_params.l_dot_h = clamp(dot(l, h), 0.0, 1.0);
         func_params.v_dot_h = clamp(dot(v, h), 0.0, 1.0);
