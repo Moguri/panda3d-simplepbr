@@ -104,7 +104,7 @@ float visibility_occlusion(FunctionParamters func_params) {
 // GGX/Trowbridge-Reitz
 float microfacet_distribution(FunctionParamters func_params) {
     float roughness2 = func_params.roughness * func_params.roughness;
-    float f = (func_params.n_dot_h * roughness2 - func_params.n_dot_h) * func_params.n_dot_h + 1.0;
+    float f = (func_params.n_dot_h * func_params.n_dot_h) * (roughness2 - 1.0) + 1.0;
     return roughness2 / (PI * f * f);
 }
 
