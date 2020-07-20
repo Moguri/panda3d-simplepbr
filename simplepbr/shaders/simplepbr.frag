@@ -50,7 +50,6 @@ struct FunctionParamters {
     float roughness;
     float metallic;
     vec3 reflection0;
-    vec3 reflection90;
     vec3 diffuse_color;
     vec3 specular_color;
 };
@@ -79,9 +78,11 @@ varying mat3 v_tbn;
 varying vec4 v_shadow_pos[MAX_LIGHTS];
 #endif
 
-// Schlick's Fresnel approximation
+// Schlick's Fresnel approximation with Spherical Gaussian approximation to replace the power
 vec3 specular_reflection(FunctionParamters func_params) {
-    return func_params.reflection0 + (func_params.reflection90 - func_params.reflection0) * pow(clamp(1.0 - func_params.v_dot_h, 0.0, 1.0), 5.0);
+    vec3 f0 = func_params.reflection0;
+    float v_dot_h= func_params.v_dot_h;
+    return f0 + (1 - f0) * pow(2, (-5.55473 * v_dot_h - 6.98316) * v_dot_h);
 }
 
 // Smith GGX with optional fast sqrt approximation (see https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg))
@@ -121,7 +122,6 @@ void main() {
     vec4 base_color = p3d_Material.baseColor * v_color * p3d_ColorScale * texture2D(p3d_TextureBaseColor, v_texcoord);
     vec3 diffuse_color = (base_color.rgb * (vec3(1.0) - F0)) * (1.0 - metallic);
     vec3 spec_color = mix(F0, base_color.rgb, metallic);
-    vec3 reflection90 = vec3(clamp(max(max(spec_color.r, spec_color.g), spec_color.b) * 50.0, 0.0, 1.0));
 #ifdef USE_NORMAL_MAP
     vec3 n = normalize(v_tbn * (2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0));
 #else
@@ -152,7 +152,6 @@ void main() {
 
         vec3 l = normalize(p3d_LightSource[i].position.xyz - v_position * p3d_LightSource[i].position.w);
         vec3 h = normalize(l + v);
-        vec3 r = -normalize(reflect(l, n));
         float spotcos = dot(normalize(p3d_LightSource[i].spotDirection), -l);
         float spotcutoff = p3d_LightSource[i].spotCosCutoff;
         float shadowSpot = smoothstep(spotcutoff-SPOTSMOOTH, spotcutoff+SPOTSMOOTH, spotcos);
@@ -172,7 +171,6 @@ void main() {
         func_params.roughness = alpha_roughness;
         func_params.metallic =  metallic;
         func_params.reflection0 = spec_color;
-        func_params.reflection90 = reflection90;
         func_params.diffuse_color = diffuse_color;
         func_params.specular_color = spec_color;
 
