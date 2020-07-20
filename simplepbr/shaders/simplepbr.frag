@@ -109,8 +109,8 @@ float microfacet_distribution(FunctionParamters func_params) {
 }
 
 // Lambert
-vec3 diffuse_function(FunctionParamters func_params) {
-    return func_params.diffuse_color / PI;
+float diffuse_function(FunctionParamters func_params) {
+    return 1.0 / PI;
 }
 
 void main() {
@@ -180,7 +180,7 @@ void main() {
         float V = visibility_occlusion(func_params); // V = G / (4 * n_dot_l * n_dot_v)
         float D = microfacet_distribution(func_params);
 
-        vec3 diffuse_contrib = (1.0 - F) * diffuse_function(func_params);
+        vec3 diffuse_contrib = diffuse_color * diffuse_function(func_params);
         vec3 spec_contrib = vec3(F * V * D);
         color.rgb += func_params.n_dot_l * lightcol * (diffuse_contrib + spec_contrib) * shadow;
     }
