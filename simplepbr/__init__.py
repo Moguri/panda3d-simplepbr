@@ -57,6 +57,7 @@ class Pipeline:
             render_node=None,
             window=None,
             camera_node=None,
+            taskmgr=None,
             msaa_samples=4,
             max_lights=8,
             use_normal_maps=False,
@@ -74,6 +75,9 @@ class Pipeline:
 
         if camera_node is None:
             camera_node = base.cam
+
+        if taskmgr is None:
+            taskmgr = base.task_mgr
 
         self._shader_ready = False
         self.render_node = render_node
@@ -102,6 +106,9 @@ class Pipeline:
 
         # Tonemapping
         self._setup_tonemapping()
+
+        # Do updates based on scene changes
+        taskmgr.add(self._update, 'simplepbr update')
 
         self._shader_ready = True
 
@@ -159,14 +166,10 @@ class Pipeline:
             self.manager.cleanup()
 
             # Fix shadow buffers after FilterManager.cleanup()
-            for casternp in self.render_node.find_all_matches('**/+LightLensNode'):
-                caster = casternp.node()
-                if caster.is_shadow_caster():
-                    # caster.set_shadow_caster(False)
-                    # caster.set_shadow_caster(True)
-                    sbuff_size = caster.get_shadow_buffer_size()
-                    caster.set_shadow_buffer_size((0, 0))
-                    caster.set_shadow_buffer_size(sbuff_size)
+            for caster in self.get_all_casters():
+                sbuff_size = caster.get_shadow_buffer_size()
+                caster.set_shadow_buffer_size((0, 0))
+                caster.set_shadow_buffer_size(sbuff_size)
 
 
         fbprops = p3d.FrameBufferProperties()
@@ -190,6 +193,27 @@ class Pipeline:
         self.tonemap_quad.set_shader_input('tex', scene_tex)
         self.tonemap_quad.set_shader_input('exposure', self.exposure)
 
+    def get_all_casters(self):
+        return [
+            i.node()
+            for i in self.render_node.find_all_matches('**/+LightLensNode')
+            if i.node().is_shadow_caster()
+        ]
+
+    def _update(self, task):
+        # Use a simpler, faster shader for shadows
+        for caster in self.get_all_casters():
+            state = caster.get_initial_state()
+            if not state.has_attrib(p3d.ShaderAttrib):
+                shader = p3d.Shader.make(
+                    p3d.Shader.SL_GLSL,
+                    vertex=_load_shader_str('shadow.vert'),
+                    fragment=_load_shader_str('shadow.frag')
+                )
+                state = state.add_attrib(p3d.ShaderAttrib.make(shader), 1)
+                caster.set_initial_state(state)
+
+        return task.cont
 
 def init(*,
          render_node=None,
