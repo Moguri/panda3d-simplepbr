@@ -8,6 +8,7 @@ setup(
     version=__version__,
     keywords='panda3d',
     packages=['simplepbr'],
+    python_requires='>=3.6.0',
     install_requires=[
         'panda3d',
     ],
