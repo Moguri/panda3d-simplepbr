@@ -23,4 +23,8 @@ def test_setup(showbase):
         render_node=showbase.render,
         window=showbase.win,
         camera_node=showbase.cam,
+        use_normal_maps=True,
+        enable_shadows=True,
+        enable_fog=True,
+        use_occlusion_maps=True,
     )
