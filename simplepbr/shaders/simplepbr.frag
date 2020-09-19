@@ -125,7 +125,7 @@ void main() {
 #ifdef USE_NORMAL_MAP
     vec3 n = normalize(v_tbn * (2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0));
 #else
-    vec3 n = v_tbn[2];
+    vec3 n = normalize(v_tbn[2]);
 #endif
     vec3 v = normalize(-v_position);
 
