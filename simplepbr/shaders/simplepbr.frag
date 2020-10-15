@@ -11,17 +11,14 @@ uniform struct p3d_MaterialParameters {
     vec4 emission;
     float roughness;
     float metallic;
-    float refractiveIndex;
 } p3d_Material;
 
 uniform struct p3d_LightSourceParameters {
     vec4 position;
     vec4 diffuse;
     vec4 specular;
-    vec3 attenuation;
     vec3 spotDirection;
     float spotCosCutoff;
-    float spotExponent;
 #ifdef ENABLE_SHADOWS
     sampler2DShadow shadowMap;
     mat4 shadowViewMatrix;
