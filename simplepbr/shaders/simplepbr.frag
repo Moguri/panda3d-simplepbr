@@ -54,12 +54,6 @@ struct FunctionParamters {
     vec3 specular_color;
 };
 
-// Give texture slots names
-#define p3d_TextureBaseColor p3d_Texture0
-#define p3d_TextureMetalRoughness p3d_Texture1
-#define p3d_TextureNormal p3d_Texture2
-#define p3d_TextureEmission p3d_Texture3
-
 uniform sampler2D p3d_TextureBaseColor;
 uniform sampler2D p3d_TextureMetalRoughness;
 uniform sampler2D p3d_TextureNormal;

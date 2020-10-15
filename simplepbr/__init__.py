@@ -45,8 +45,15 @@ def _load_shader_str(shaderpath, defines=None):
     with open(os.path.join(shader_dir, shaderpath)) as shaderfile:
         shaderstr = shaderfile.read()
 
-    if defines is not None:
-        shaderstr = _add_shader_defines(shaderstr, defines)
+    if defines is None:
+        defines = {}
+
+    defines['p3d_TextureBaseColor'] = 'p3d_Texture0'
+    defines['p3d_TextureMetalRoughness'] = 'p3d_Texture1'
+    defines['p3d_TextureNormal'] = 'p3d_Texture2'
+    defines['p3d_TextureEmission'] = 'p3d_Texture3'
+
+    shaderstr = _add_shader_defines(shaderstr, defines)
 
     return shaderstr
 
