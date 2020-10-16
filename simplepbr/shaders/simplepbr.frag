@@ -156,7 +156,7 @@ void main() {
 #else
         float shadowCaster = 1.0;
 #endif
-        float shadow = shadowSpot * shadowCaster;
+        float shadow = shadowSpot * shadowCaster * attenuation_factor;
 
         FunctionParamters func_params;
         func_params.n_dot_l = clamp(dot(n, l), 0.0, 1.0);
