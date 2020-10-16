@@ -17,6 +17,7 @@ uniform struct p3d_LightSourceParameters {
     vec4 position;
     vec4 diffuse;
     vec4 specular;
+    vec3 attenuation;
     vec3 spotDirection;
     float spotCosCutoff;
 #ifdef ENABLE_SHADOWS
@@ -141,8 +142,12 @@ void main() {
             continue;
         }
 
-        vec3 l = normalize(p3d_LightSource[i].position.xyz - v_position * p3d_LightSource[i].position.w);
+        vec3 light_pos = p3d_LightSource[i].position.xyz - v_position * p3d_LightSource[i].position.w;
+        vec3 l = normalize(light_pos);
         vec3 h = normalize(l + v);
+        float dist = length(light_pos);
+        vec3 att_const = p3d_LightSource[i].attenuation;
+        float attenuation_factor = 1.0 / (att_const.x + att_const.y * dist + att_const.z * dist * dist);
         float spotcos = dot(normalize(p3d_LightSource[i].spotDirection), -l);
         float spotcutoff = p3d_LightSource[i].spotCosCutoff;
         float shadowSpot = smoothstep(spotcutoff-SPOTSMOOTH, spotcutoff+SPOTSMOOTH, spotcos);
