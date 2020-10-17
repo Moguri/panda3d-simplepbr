@@ -9,6 +9,7 @@ uniform struct p3d_LightSourceParameters {
     vec4 position;
     vec4 diffuse;
     vec4 specular;
+    vec3 attenuation;
     vec3 spotDirection;
     float spotCosCutoff;
     sampler2DShadow shadowMap;
