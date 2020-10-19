@@ -144,7 +144,7 @@ class Pipeline:
             self._setup_tonemapping()
         elif name == 'render_node' and prev_value != value:
             self._recompile_pbr()
-        elif name == 'camera_node' or name == 'window' and prev_value != value:
+        elif name in ('camera_node', 'window') and prev_value != value:
             # Destroy previous buffers so we can re-create
             self.manager.cleanup()
 
