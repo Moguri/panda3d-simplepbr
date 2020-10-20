@@ -142,6 +142,15 @@ class Pipeline:
             self.tonemap_quad.set_shader_input('exposure', self.exposure)
         elif name == 'msaa_samples':
             self._setup_tonemapping()
+        elif name == 'render_node' and prev_value != value:
+            self._recompile_pbr()
+        elif name in ('camera_node', 'window') and prev_value != value:
+            # Destroy previous buffers so we can re-create
+            self.manager.cleanup()
+
+            # Create a new FilterManager instance
+            self.manager = FilterManager(self.window, self.camera_node)
+            self._setup_tonemapping()
 
     def _recompile_pbr(self):
         pbr_defines = {
