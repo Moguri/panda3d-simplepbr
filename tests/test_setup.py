@@ -14,12 +14,13 @@ def showbase():
         '',
         'window-type offscreen\n'
         'framebuffer-hardware false\n'
+        'gl-debug true\n'
     )
     return ShowBase()
 
 
 def test_setup(showbase):
-    simplepbr.init(
+    pipeline = simplepbr.init(
         render_node=showbase.render,
         window=showbase.win,
         camera_node=showbase.cam,
@@ -28,3 +29,5 @@ def test_setup(showbase):
         enable_fog=True,
         use_occlusion_maps=True,
     )
+
+    pipeline.verify_shaders()

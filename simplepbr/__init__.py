@@ -244,6 +244,18 @@ class Pipeline:
 
         return task.cont
 
+    def verify_shaders(self):
+        gsg = self.window.gsg
+
+        def check_node_shader(np):
+            shader = p3d.Shader(np.get_shader())
+            shader.prepare_now(gsg.prepared_objects, gsg)
+            assert shader.is_prepared(gsg.prepared_objects)
+            assert not shader.get_error_flag()
+
+        check_node_shader(self.render_node)
+        check_node_shader(self.tonemap_quad)
+
 def init(*,
          render_node=None,
          window=None,
