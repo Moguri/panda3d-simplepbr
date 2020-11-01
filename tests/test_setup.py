@@ -10,6 +10,7 @@ PRC_BASE = """
 window-type offscreen
 framebuffer-hardware false
 gl-debug true
+audio-library-name null
 """
 
 
