@@ -6,19 +6,25 @@ import simplepbr
 #pylint:disable=redefined-outer-name
 #pylint:disable=import-outside-toplevel
 
+PRC_BASE = """
+window-type offscreen
+framebuffer-hardware false
+gl-debug true
+"""
 
-@pytest.fixture(scope='session')
-def showbase():
+
+@pytest.fixture
+def showbase(request):
+    extra_prc = request.param
     from direct.showbase.ShowBase import ShowBase
-    p3d.load_prc_file_data(
-        '',
-        'window-type offscreen\n'
-        'framebuffer-hardware false\n'
-        'gl-debug true\n'
-    )
-    return ShowBase()
+    print(extra_prc)
+    p3d.load_prc_file_data('', f'{PRC_BASE}\n{extra_prc}')
+    showbase = ShowBase()
+    yield showbase
+    showbase.destroy()
 
 
+@pytest.mark.parametrize('showbase', ['', 'gl-version 3 2'], indirect=True)
 def test_setup(showbase):
     pipeline = simplepbr.init(
         render_node=showbase.render,

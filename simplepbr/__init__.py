@@ -55,6 +55,13 @@ def _load_shader_str(shaderpath, defines=None):
 
     shaderstr = _add_shader_defines(shaderstr, defines)
 
+    if 'USE_330' in defines:
+        shaderstr = shaderstr.replace('#version 120', '#version 330')
+        if shaderpath.endswith('vert'):
+            shaderstr = shaderstr.replace('varying ', 'out ')
+        else:
+            shaderstr = shaderstr.replace('varying ', 'in ')
+
     return shaderstr
 
 class Pipeline:
@@ -72,7 +79,8 @@ class Pipeline:
             exposure=1.0,
             enable_shadows=False,
             enable_fog=False,
-            use_occlusion_maps=False
+            use_occlusion_maps=False,
+            use_330=None,
     ):
         if render_node is None:
             render_node = base.render
@@ -99,6 +107,8 @@ class Pipeline:
         self.msaa_samples = msaa_samples
         self.use_occlusion_maps = use_occlusion_maps
 
+        self._set_use_330(use_330)
+
         # Create a FilterManager instance
         self.manager = FilterManager(window, camera_node)
 
@@ -119,6 +129,21 @@ class Pipeline:
 
         self._shader_ready = True
 
+    def _set_use_330(self, use_330):
+        if use_330 is not None:
+            self.use_330 = use_330
+        else:
+            self.use_330 = False
+            gl_version = [
+                int(i)
+                for i in p3d.ConfigVariableString('gl-version').get_value().split()
+            ]
+            if len(gl_version) >= 2 and gl_version[0] >= 3 and gl_version[1] >= 2:
+                # Not exactly accurate, but setting this variable to '3 2' is common for disabling
+                # the fixed-function pipeline and 3.2 support likely means 3.3 support as well.
+                self.use_330 = True
+
+
     def __setattr__(self, name, value):
         if hasattr(self, name):
             prev_value = getattr(self, name)
@@ -136,6 +161,14 @@ class Pipeline:
             'enable_fog',
             'use_occlusion_maps',
         ]
+        def resetup_tonemap():
+            # Destroy previous buffers so we can re-create
+            self.manager.cleanup()
+
+            # Create a new FilterManager instance
+            self.manager = FilterManager(self.window, self.camera_node)
+            self._setup_tonemapping()
+
         if name in pbr_vars and prev_value != value:
             self._recompile_pbr()
         elif name == 'exposure':
@@ -145,12 +178,11 @@ class Pipeline:
         elif name == 'render_node' and prev_value != value:
             self._recompile_pbr()
         elif name in ('camera_node', 'window') and prev_value != value:
-            # Destroy previous buffers so we can re-create
-            self.manager.cleanup()
-
-            # Create a new FilterManager instance
-            self.manager = FilterManager(self.window, self.camera_node)
-            self._setup_tonemapping()
+            resetup_tonemap()
+        elif name == 'use_330' and prev_value != value:
+            self._set_use_330(value)
+            self._recompile_pbr()
+            resetup_tonemap()
 
     def _recompile_pbr(self):
         pbr_defines = {
@@ -166,6 +198,8 @@ class Pipeline:
             pbr_defines['ENABLE_FOG'] = ''
         if self.use_occlusion_maps:
             pbr_defines['USE_OCCLUSION_MAP'] = ''
+        if self.use_330:
+            pbr_defines['USE_330'] = ''
 
         pbr_vert_str = _load_shader_str('simplepbr.vert', pbr_defines)
         pbr_frag_str = _load_shader_str('simplepbr.frag', pbr_defines)
@@ -198,8 +232,12 @@ class Pipeline:
         scene_tex.set_component_type(p3d.Texture.T_float)
         self.tonemap_quad = self.manager.render_scene_into(colortex=scene_tex, fbprops=fbprops)
 
-        post_vert_str = _load_shader_str('post.vert')
-        post_frag_str = _load_shader_str('tonemap.frag')
+        defines = {}
+        if self.use_330:
+            defines['USE_330'] = ''
+
+        post_vert_str = _load_shader_str('post.vert', defines)
+        post_frag_str = _load_shader_str('tonemap.frag', defines)
         tonemap_shader = p3d.Shader.make(
             p3d.Shader.SL_GLSL,
             vertex=post_vert_str,
@@ -221,10 +259,13 @@ class Pipeline:
         for caster in self.get_all_casters():
             state = caster.get_initial_state()
             if not state.has_attrib(p3d.ShaderAttrib):
+                defines = {}
+                if self.use_330:
+                    defines['USE_330'] = ''
                 shader = p3d.Shader.make(
                     p3d.Shader.SL_GLSL,
-                    vertex=_load_shader_str('shadow.vert'),
-                    fragment=_load_shader_str('shadow.frag')
+                    vertex=_load_shader_str('shadow.vert', defines),
+                    fragment=_load_shader_str('shadow.frag', defines)
                 )
                 state = state.add_attrib(p3d.ShaderAttrib.make(shader), 1)
                 caster.set_initial_state(state)
@@ -267,7 +308,8 @@ def init(*,
          exposure=1.0,
          enable_shadows=False,
          enable_fog=False,
-         use_occlusion_maps=False
+         use_occlusion_maps=False,
+         use_330=None,
          ):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
@@ -293,6 +335,8 @@ def init(*,
     :param use_occlusion_maps: Use occlusion maps, defaults to `False` (NOTE: Requires occlusion channel in
     metal-roughness map)
     :type use_occlusion_maps: bool
+    :param use_330: Force the usage of GLSL 330 shaders (version 120 otherwise, auto-detect if None)
+    :type use_330: bool
     '''
 
     return Pipeline(
@@ -306,5 +350,6 @@ def init(*,
         exposure=exposure,
         enable_shadows=enable_shadows,
         enable_fog=enable_fog,
-        use_occlusion_maps=use_occlusion_maps
+        use_occlusion_maps=use_occlusion_maps,
+        use_330=use_330,
     )
