@@ -37,4 +37,7 @@ def test_setup(showbase):
         use_occlusion_maps=True,
     )
 
+    if not pipeline.use_330:
+        pipeline.enable_shadows = False
+
     pipeline.verify_shaders()
