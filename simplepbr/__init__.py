@@ -134,9 +134,11 @@ class Pipeline:
             self.use_330 = use_330
         else:
             self.use_330 = False
+
+            cvar = p3d.ConfigVariableInt('gl-version')
             gl_version = [
-                int(i)
-                for i in p3d.ConfigVariableString('gl-version').get_value().split()
+                cvar.get_word(i)
+                for i in range(cvar.get_num_words())
             ]
             if len(gl_version) >= 2 and gl_version[0] >= 3 and gl_version[1] >= 2:
                 # Not exactly accurate, but setting this variable to '3 2' is common for disabling
