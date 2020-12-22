@@ -20,6 +20,7 @@ uniform struct p3d_LightSourceParameters {
 uniform mat4 p3d_ProjectionMatrix;
 uniform mat4 p3d_ModelViewMatrix;
 uniform mat3 p3d_NormalMatrix;
+uniform mat4 p3d_TextureMatrix;
 
 attribute vec4 p3d_Vertex;
 attribute vec4 p3d_Color;
@@ -41,7 +42,7 @@ void main() {
     v_position = vec3(vert_pos4);
     v_color = p3d_Color;
     vec3 normal = normalize(p3d_NormalMatrix * p3d_Normal);
-    v_texcoord = p3d_MultiTexCoord0;
+    v_texcoord = (p3d_TextureMatrix * vec4(p3d_MultiTexCoord0, 0, 1)).xy;
 #ifdef ENABLE_SHADOWS
     for (int i = 0; i < p3d_LightSource.length(); ++i) {
         v_shadow_pos[i] = p3d_LightSource[i].shadowViewMatrix * vert_pos4;
