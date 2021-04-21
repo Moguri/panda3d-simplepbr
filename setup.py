@@ -10,7 +10,7 @@ setup(
     packages=['simplepbr'],
     python_requires='>=3.6.0',
     install_requires=[
-        'panda3d',
+        'panda3d>=1.10.8',
     ],
     setup_requires=[
         'pytest-runner'
