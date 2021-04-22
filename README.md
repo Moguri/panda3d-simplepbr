@@ -104,6 +104,9 @@ Use occlusion maps, defaults to `False` (NOTE: Requires occlusion channel in met
 `use_330`
 : Force shaders to use GLSL version 330 (if `True`) or 120 (if `False`) or auto-detect if `None`, defaults to `None`
 
+`use_hardware_skinning`
+: Force usage of hardware skinning for skeleton animations or auto-detect if `None`, defaults to `None`
+
 Those parameters can also be modified later on by setting the related attribute of the simplepbr pipeline returned by the init() function:
 
 ```python

@@ -17,6 +17,10 @@ uniform struct p3d_LightSourceParameters {
 } p3d_LightSource[MAX_LIGHTS];
 #endif
 
+#ifdef ENABLE_SKINNING
+uniform mat4 p3d_TransformTable[100];
+#endif
+
 uniform mat4 p3d_ProjectionMatrix;
 uniform mat4 p3d_ModelViewMatrix;
 uniform mat3 p3d_NormalMatrix;
@@ -27,6 +31,10 @@ attribute vec4 p3d_Color;
 attribute vec3 p3d_Normal;
 attribute vec4 p3d_Tangent;
 attribute vec2 p3d_MultiTexCoord0;
+#ifdef ENABLE_SKINNING
+attribute vec4 transform_weight;
+attribute uvec4 transform_index;
+#endif
 
 
 varying vec3 v_position;
@@ -38,7 +46,17 @@ varying vec4 v_shadow_pos[MAX_LIGHTS];
 #endif
 
 void main() {
+#ifdef ENABLE_SKINNING
+    mat4 skin_matrix = (
+        p3d_TransformTable[transform_index.x] * transform_weight.x +
+        p3d_TransformTable[transform_index.y] * transform_weight.y +
+        p3d_TransformTable[transform_index.z] * transform_weight.z +
+        p3d_TransformTable[transform_index.w] * transform_weight.w
+    );
+    vec4 vert_pos4 = p3d_ModelViewMatrix * skin_matrix * p3d_Vertex;
+#else
     vec4 vert_pos4 = p3d_ModelViewMatrix * p3d_Vertex;
+#endif
     v_position = vec3(vert_pos4);
     v_color = p3d_Color;
     vec3 normal = normalize(p3d_NormalMatrix * p3d_Normal);

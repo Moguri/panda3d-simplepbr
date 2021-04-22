@@ -81,6 +81,7 @@ class Pipeline:
             enable_fog=False,
             use_occlusion_maps=False,
             use_330=None,
+            use_hardware_skinning=None,
     ):
         if render_node is None:
             render_node = base.render
@@ -108,6 +109,7 @@ class Pipeline:
         self.use_occlusion_maps = use_occlusion_maps
 
         self._set_use_330(use_330)
+        self.enable_hardware_skinning = use_hardware_skinning if use_hardware_skinning is not None else self.use_330
 
         # Create a FilterManager instance
         self.manager = FilterManager(window, camera_node)
@@ -202,6 +204,8 @@ class Pipeline:
             pbr_defines['USE_OCCLUSION_MAP'] = ''
         if self.use_330:
             pbr_defines['USE_330'] = ''
+        if self.enable_hardware_skinning:
+            pbr_defines['ENABLE_SKINNING'] = ''
 
         pbr_vert_str = _load_shader_str('simplepbr.vert', pbr_defines)
         pbr_frag_str = _load_shader_str('simplepbr.frag', pbr_defines)
@@ -210,7 +214,10 @@ class Pipeline:
             vertex=pbr_vert_str,
             fragment=pbr_frag_str,
         )
-        self.render_node.set_shader(pbrshader)
+        attr = p3d.ShaderAttrib.make(pbrshader)
+        if self.enable_hardware_skinning:
+            attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
+        self.render_node.set_attrib(attr)
 
     def _setup_tonemapping(self):
         if self._shader_ready:
@@ -264,12 +271,17 @@ class Pipeline:
                 defines = {}
                 if self.use_330:
                     defines['USE_330'] = ''
+                if self.enable_hardware_skinning:
+                    defines['ENABLE_SKINNING'] = ''
                 shader = p3d.Shader.make(
                     p3d.Shader.SL_GLSL,
                     vertex=_load_shader_str('shadow.vert', defines),
                     fragment=_load_shader_str('shadow.frag', defines)
                 )
-                state = state.add_attrib(p3d.ShaderAttrib.make(shader), 1)
+                attr = p3d.ShaderAttrib.make(shader)
+                if self.enable_hardware_skinning:
+                    attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
+                state = state.add_attrib(attr, 1)
                 caster.set_initial_state(state)
 
         # Use the auto-shader for node types that simplepbr does not support
@@ -312,6 +324,7 @@ def init(*,
          enable_fog=False,
          use_occlusion_maps=False,
          use_330=None,
+         use_hardware_skinning=None
          ):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
@@ -338,7 +351,10 @@ def init(*,
     metal-roughness map)
     :type use_occlusion_maps: bool
     :param use_330: Force the usage of GLSL 330 shaders (version 120 otherwise, auto-detect if None)
-    :type use_330: bool
+    :type use_330: bool or None
+    :param use_hardware_skinning: Force usage of hardware skinning for skeleton animations
+        (auto-detect if None, defaults to None)
+    :type use_hardware_skinning: bool or None
     '''
 
     return Pipeline(
@@ -354,4 +370,5 @@ def init(*,
         enable_fog=enable_fog,
         use_occlusion_maps=use_occlusion_maps,
         use_330=use_330,
+        use_hardware_skinning=use_hardware_skinning
     )
