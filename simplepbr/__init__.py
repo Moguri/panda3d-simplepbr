@@ -311,21 +311,7 @@ class Pipeline:
         check_node_shader(self.render_node)
         check_node_shader(self.tonemap_quad)
 
-def init(*,
-         render_node=None,
-         window=None,
-         camera_node=None,
-         msaa_samples=4,
-         max_lights=8,
-         use_normal_maps=False,
-         use_emission_maps=True,
-         exposure=1.0,
-         enable_shadows=False,
-         enable_fog=False,
-         use_occlusion_maps=False,
-         use_330=None,
-         use_hardware_skinning=None
-         ):
+def init(**kwargs):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
     :type render_node: `panda3d.core.NodePath`
@@ -357,18 +343,4 @@ def init(*,
     :type use_hardware_skinning: bool or None
     '''
 
-    return Pipeline(
-        render_node=render_node,
-        window=window,
-        camera_node=camera_node,
-        msaa_samples=msaa_samples,
-        max_lights=max_lights,
-        use_normal_maps=use_normal_maps,
-        use_emission_maps=use_emission_maps,
-        exposure=exposure,
-        enable_shadows=enable_shadows,
-        enable_fog=enable_fog,
-        use_occlusion_maps=use_occlusion_maps,
-        use_330=use_330,
-        use_hardware_skinning=use_hardware_skinning
-    )
+    return Pipeline(**kwargs)
