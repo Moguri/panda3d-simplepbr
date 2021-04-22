@@ -87,10 +87,10 @@ The `init()` function will choose typical defaults, but the following can be mod
 : Use normal maps to modify fragment normals, defaults to `False` (NOTE: Requires models with appropriate tangents defined)
 
  `use_emission_maps`
- Use emission maps, defaults to `True`
+: Use emission maps, defaults to `True`
 
 `use_occlusion_maps`
-Use occlusion maps, defaults to `False` (NOTE: Requires occlusion channel in metal-roughness map)
+: Use occlusion maps, defaults to `False` (NOTE: Requires occlusion channel in metal-roughness map)
 
 `enable_shadows`
 : Enable shadow map support (breaks with point lights), defaults to False
