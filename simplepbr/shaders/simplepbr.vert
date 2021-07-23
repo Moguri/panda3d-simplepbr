@@ -12,6 +12,7 @@ uniform struct p3d_LightSourceParameters {
     vec3 attenuation;
     vec3 spotDirection;
     float spotCosCutoff;
+    float spotExponent;
     sampler2DShadow shadowMap;
     mat4 shadowViewMatrix;
 } p3d_LightSource[MAX_LIGHTS];
