@@ -20,6 +20,7 @@ uniform struct p3d_LightSourceParameters {
     vec3 attenuation;
     vec3 spotDirection;
     float spotCosCutoff;
+    float spotExponent;
 #ifdef ENABLE_SHADOWS
     sampler2DShadow shadowMap;
     mat4 shadowViewMatrix;
@@ -106,6 +107,7 @@ float diffuse_function(FunctionParamters func_params) {
     return 1.0 / PI;
 }
 
+
 void main() {
     vec4 metal_rough = texture2D(p3d_TextureMetalRoughness, v_texcoord);
     float metallic = clamp(p3d_Material.metallic * metal_rough.b, 0.0, 1.0);
@@ -148,9 +150,17 @@ void main() {
         float dist = length(light_pos);
         vec3 att_const = p3d_LightSource[i].attenuation;
         float attenuation_factor = 1.0 / (att_const.x + att_const.y * dist + att_const.z * dist * dist);
-        float spotcos = dot(normalize(p3d_LightSource[i].spotDirection), -l);
-        float spotcutoff = p3d_LightSource[i].spotCosCutoff;
-        float shadowSpot = smoothstep(spotcutoff-SPOTSMOOTH, spotcutoff+SPOTSMOOTH, spotcos);
+
+        // https://www.pbr-book.org/3ed-2018/Light_Sources/Point_Lights#SpotLight::Falloff
+        float cosTheta = dot(normalize(p3d_LightSource[i].spotDirection), -l);
+        float cosTotalWidth = p3d_LightSource[i].spotCosCutoff;
+        float cosFalloffStart = p3d_LightSource[i].spotExponent; //dirty hack. pass cosFalloffStart through the 'spotExponent' property
+
+        float smoothedge = smoothstep(cosTotalWidth-SPOTSMOOTH, cosTotalWidth + SPOTSMOOTH, cosTheta);
+        float delta = (cosTheta - cosTotalWidth) / (SPOTSMOOTH + cosFalloffStart  - cosTotalWidth);
+        float shadowSpot = mix(delta, 1, step(cosFalloffStart, cosTheta)) * smoothedge;
+
+
 #ifdef ENABLE_SHADOWS
         float shadowCaster = shadow2DProj(p3d_LightSource[i].shadowMap, v_shadow_pos[i]).r;
 #else
