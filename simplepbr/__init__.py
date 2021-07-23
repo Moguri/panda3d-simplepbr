@@ -40,7 +40,6 @@ def _add_shader_defines(shaderstr, defines):
 
 
 def _load_shader_str(shaderpath, defines=None):
-    # per rdb -- current directory is platform-specific resources
     shader_dir = os.path.join(os.curdir, "shaders")
 
     if not os.path.exists(shader_dir):
