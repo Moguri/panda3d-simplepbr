@@ -63,6 +63,7 @@ def _load_shader_str(shaderpath, defines=None):
         shaderstr = shaderstr.replace('#version 120', '#version 330')
         if shaderpath.endswith('vert'):
             shaderstr = shaderstr.replace('varying ', 'out ')
+            shaderstr = shaderstr.replace('attribute ', 'in ')
         else:
             shaderstr = shaderstr.replace('varying ', 'in ')
 
