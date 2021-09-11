@@ -43,7 +43,6 @@ def _load_shader_str(shaderpath, defines=None):
     shader_dir = os.path.join(os.curdir, "shaders")
 
     if not os.path.exists(shader_dir):
-        print("shader dir not under platform-specific resources directory, reverting to module-relative")
         shader_dir = os.path.join(os.path.dirname(__file__), 'shaders')
 
     with open(os.path.join(shader_dir, shaderpath)) as shaderfile:
