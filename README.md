@@ -119,12 +119,12 @@ Those parameters can also be modified later on by setting the related attribute 
 
 ### Textures
 
-The shader currently assumes that the following textures are in these slots:
+simplepbr expects the following textures are assigned to the following texture stages:
 
-0. BaseColor
-1. MetalRoughness
-2. Normals
-3. Emission
+* BaseColor - Modulate
+* MetalRoughness - Selector
+* Normals - Normal
+* Emission - Emission
 
 ## Example
 

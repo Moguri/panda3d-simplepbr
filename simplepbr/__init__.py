@@ -52,10 +52,10 @@ def _load_shader_str(shaderpath, defines=None):
     if defines is None:
         defines = {}
 
-    defines['p3d_TextureBaseColor'] = 'p3d_Texture0'
-    defines['p3d_TextureMetalRoughness'] = 'p3d_Texture1'
-    defines['p3d_TextureNormal'] = 'p3d_Texture2'
-    defines['p3d_TextureEmission'] = 'p3d_Texture3'
+    defines['p3d_TextureBaseColor'] = 'p3d_TextureModulate'
+    defines['p3d_TextureMetalRoughness'] = 'p3d_TextureSelector'
+    defines['p3d_TextureNormal'] = 'p3d_TextureNormal'
+    defines['p3d_TextureEmission'] = 'p3d_TextureEmission'
 
     shaderstr = _add_shader_defines(shaderstr, defines)
 
