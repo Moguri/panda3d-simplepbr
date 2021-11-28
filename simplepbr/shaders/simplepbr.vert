@@ -54,12 +54,13 @@ void main() {
         p3d_TransformTable[transform_index.w] * transform_weight.w
     );
     vec4 vert_pos4 = p3d_ModelViewMatrix * skin_matrix * p3d_Vertex;
+    vec3 normal = normalize(p3d_NormalMatrix * (skin_matrix * vec4(p3d_Normal.xyz, 0.0)).xyz);
 #else
     vec4 vert_pos4 = p3d_ModelViewMatrix * p3d_Vertex;
+    vec3 normal = normalize(p3d_NormalMatrix * p3d_Normal);
 #endif
     v_position = vec3(vert_pos4);
     v_color = p3d_Color;
-    vec3 normal = normalize(p3d_NormalMatrix * p3d_Normal);
     v_texcoord = (p3d_TextureMatrix * vec4(p3d_MultiTexCoord0, 0, 1)).xy;
 #ifdef ENABLE_SHADOWS
     for (int i = 0; i < p3d_LightSource.length(); ++i) {
