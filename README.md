@@ -147,9 +147,32 @@ setup(
 )
 ```
 
-## Running tests
+## Running Tests
+
+First install `panda3d-simplepbr` in editable mode along with `test` extras:
+
 ```bash
-python setup.py test
+pip install -e .[test]
+```
+
+Then run the test suite with `pytest`:
+
+```bash
+pytest
+```
+
+## Building Wheels
+
+Install `build`:
+
+```bash
+pip install --upgrade build
+```
+
+and run:
+
+```bash
+python -m build
 ```
 
 ## License
