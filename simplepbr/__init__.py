@@ -1,5 +1,5 @@
 import os
-
+from pathlib import Path
 import panda3d.core as p3d
 
 from direct.filter.FilterManager import FilterManager
@@ -40,12 +40,9 @@ def _add_shader_defines(shaderstr, defines):
 
 
 def _load_shader_str(shaderpath, defines=None):
-    shader_dir = os.path.join(os.curdir, "shaders")
+    shader_dir = Path(__file__).parent.absolute() / "shaders"
 
-    if not os.path.exists(shader_dir):
-        shader_dir = os.path.join(os.path.dirname(__file__), 'shaders')
-
-    with open(os.path.join(shader_dir, shaderpath)) as shaderfile:
+    with open(shader_dir / shaderpath) as shaderfile:
         shaderstr = shaderfile.read()
 
     if defines is None:
