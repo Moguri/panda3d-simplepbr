@@ -261,10 +261,17 @@ class Pipeline:
         self.tonemap_quad.set_shader_input('exposure', self.exposure)
 
     def get_all_casters(self):
+        engine = p3d.GraphicsEngine.get_global_ptr()
+        cameras = [
+            dispregion.camera
+            for win in engine.windows
+            for dispregion in win.active_display_regions
+        ]
+
         return [
             i.node()
-            for i in self.render_node.find_all_matches('**/+LightLensNode')
-            if i.node().is_shadow_caster()
+            for i in cameras
+            if hasattr(i.node(), 'is_shadow_caster') and i.node().is_shadow_caster()
         ]
 
     def _update(self, task):
