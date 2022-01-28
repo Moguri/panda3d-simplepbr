@@ -288,19 +288,6 @@ class Pipeline:
                 state = state.add_attrib(attr, 1)
                 caster.set_initial_state(state)
 
-        # Use the auto-shader for node types that simplepbr does not support
-        unsupported_types = [
-            'TextNode',
-        ]
-        nodes = [
-            node
-            for node_type in unsupported_types
-            for node in self.render_node.find_all_matches(f'**/+{node_type}')
-        ]
-        for node in nodes:
-            if not node.has_attrib(p3d.ShaderAttrib):
-                node.set_shader_auto(True)
-
         return task.cont
 
     def verify_shaders(self):

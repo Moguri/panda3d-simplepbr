@@ -38,6 +38,7 @@ uniform struct p3d_FogParameters {
 #endif
 
 uniform vec4 p3d_ColorScale;
+uniform vec4 p3d_TexAlphaOnly;
 
 struct FunctionParamters {
     float n_dot_l;
@@ -137,7 +138,7 @@ void main() {
     vec3 emission = vec3(0.0);
 #endif
 
-    vec4 color = vec4(vec3(0.0), base_color.a);
+    vec4 color = vec4(vec3(0.0), base_color.a) + p3d_TexAlphaOnly;
 
     for (int i = 0; i < p3d_LightSource.length(); ++i) {
         vec3 lightcol = p3d_LightSource[i].diffuse.rgb;
