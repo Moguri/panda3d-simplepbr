@@ -16,7 +16,7 @@ audio-library-name null
 
 @pytest.fixture
 def showbase(request):
-    extra_prc = request.param
+    extra_prc = request.param if hasattr(request, 'param') else ''
     from direct.showbase.ShowBase import ShowBase
     print(extra_prc)
     p3d.load_prc_file_data('', f'{PRC_BASE}\n{extra_prc}')
@@ -39,5 +39,16 @@ def test_setup(showbase):
 
     if not pipeline.use_330:
         pipeline.enable_shadows = False
+
+    pipeline.verify_shaders()
+
+def test_hw_skinning_120(showbase):
+    pipeline = simplepbr.init(
+        render_node=showbase.render,
+        window=showbase.win,
+        camera_node=showbase.cam,
+        use_330=False,
+        use_hardware_skinning=True
+    )
 
     pipeline.verify_shaders()

@@ -193,6 +193,13 @@ class Pipeline:
             resetup_tonemap()
 
     def _recompile_pbr(self):
+        if self.enable_hardware_skinning and not self.use_330:
+            print(
+                f'simplepbr: Hardware skinning requires GLSL 330, but use_330 is not set. '
+                f'Disabling hardware skinning.'
+            )
+            self.enable_hardware_skinning = False
+
         pbr_defines = {
             'MAX_LIGHTS': self.max_lights,
         }
