@@ -10,7 +10,7 @@ attribute vec4 p3d_Color;
 attribute vec2 p3d_MultiTexCoord0;
 #ifdef ENABLE_SKINNING
 attribute vec4 transform_weight;
-attribute uvec4 transform_index;
+attribute vec4 transform_index;
 #endif
 
 
@@ -20,10 +20,10 @@ varying vec2 v_texcoord;
 void main() {
 #ifdef ENABLE_SKINNING
     mat4 skin_matrix = (
-        p3d_TransformTable[transform_index.x] * transform_weight.x +
-        p3d_TransformTable[transform_index.y] * transform_weight.y +
-        p3d_TransformTable[transform_index.z] * transform_weight.z +
-        p3d_TransformTable[transform_index.w] * transform_weight.w
+        p3d_TransformTable[int(transform_index.x)] * transform_weight.x +
+        p3d_TransformTable[int(transform_index.y)] * transform_weight.y +
+        p3d_TransformTable[int(transform_index.z)] * transform_weight.z +
+        p3d_TransformTable[int(transform_index.w)] * transform_weight.w
     );
     vec4 vert_pos4 = skin_matrix * p3d_Vertex;
 #else

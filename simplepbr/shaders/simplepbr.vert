@@ -33,7 +33,7 @@ attribute vec4 p3d_Tangent;
 attribute vec2 p3d_MultiTexCoord0;
 #ifdef ENABLE_SKINNING
 attribute vec4 transform_weight;
-attribute uvec4 transform_index;
+attribute vec4 transform_index;
 #endif
 
 
@@ -48,10 +48,10 @@ varying vec4 v_shadow_pos[MAX_LIGHTS];
 void main() {
 #ifdef ENABLE_SKINNING
     mat4 skin_matrix = (
-        p3d_TransformTable[transform_index.x] * transform_weight.x +
-        p3d_TransformTable[transform_index.y] * transform_weight.y +
-        p3d_TransformTable[transform_index.z] * transform_weight.z +
-        p3d_TransformTable[transform_index.w] * transform_weight.w
+        p3d_TransformTable[int(transform_index.x)] * transform_weight.x +
+        p3d_TransformTable[int(transform_index.y)] * transform_weight.y +
+        p3d_TransformTable[int(transform_index.z)] * transform_weight.z +
+        p3d_TransformTable[int(transform_index.w)] * transform_weight.w
     );
     vec4 vert_pos4 = p3d_ModelViewMatrix * skin_matrix * p3d_Vertex;
     vec3 normal = normalize(p3d_NormalMatrix * (skin_matrix * vec4(p3d_Normal.xyz, 0.0)).xyz);
