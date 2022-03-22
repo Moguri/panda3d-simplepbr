@@ -6,6 +6,11 @@ from direct.filter.FilterManager import FilterManager
 
 from .version import __version__
 
+try:
+    from .shaders import shaders
+except ImportError:
+    shaders = None
+
 
 __all__ = [
     'init',
@@ -40,13 +45,13 @@ def _add_shader_defines(shaderstr, defines):
 
 
 def _load_shader_str(shaderpath, defines=None):
-    shader_dir = os.path.join(os.curdir, "shaders")
-
-    if not os.path.exists(shader_dir):
+    if shaders:
+        shaderstr = shaders[shaderpath]
+    else:
         shader_dir = os.path.join(os.path.dirname(__file__), 'shaders')
 
-    with open(os.path.join(shader_dir, shaderpath)) as shaderfile:
-        shaderstr = shaderfile.read()
+        with open(os.path.join(shader_dir, shaderpath)) as shaderfile:
+            shaderstr = shaderfile.read()
 
     if defines is None:
         defines = {}
