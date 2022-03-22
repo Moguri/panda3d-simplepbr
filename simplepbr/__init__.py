@@ -6,6 +6,7 @@ import panda3d.core as p3d
 from direct.filter.FilterManager import FilterManager
 
 from .version import __version__
+from .import ibl
 
 try:
     from .shaders import shaders
@@ -179,6 +180,7 @@ class Pipeline:
             use_hardware_skinning=None,
             sdr_lut=None,
             sdr_lut_factor=1.0,
+            env_map=None,
     ):
         if render_node is None:
             render_node = base.render
@@ -218,6 +220,19 @@ class Pipeline:
 
         # Make sure we have AA for if/when MSAA is enabled
         self.render_node.set_antialias(p3d.AntialiasAttrib.M_auto)
+
+        # Setup env map to be used for irradiance
+        if not env_map:
+            env_map = p3d.Texture('env_map_fallback')
+            env_map.setup_cube_map(
+                2,
+                p3d.Texture.T_unsigned_byte,
+                p3d.Texture.F_rgb
+            )
+            env_map.set_clear_color(p3d.LColor(0, 0, 0, 1))
+            env_map.make_ram_image()
+        self.env_map = env_map
+        self._gather_sh_coeffs()
 
         # PBR Shader
         self._recompile_pbr()
@@ -290,6 +305,25 @@ class Pipeline:
             resetup_tonemap()
         elif name == 'sdr_lut_factor' and self.sdr_lut:
             self.tonemap_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
+        elif name == 'env_map':
+            self._gather_sh_coeffs()
+            self._recompile_pbr()
+
+    def _gather_sh_coeffs(self):
+        if self.env_map is None:
+            self._sh_coeffs = [
+                p3d.LVector3(0, 0, 0),
+                p3d.LVector3(0, 0, 0),
+                p3d.LVector3(0, 0, 0),
+                p3d.LVector3(0, 0, 0),
+                p3d.LVector3(0, 0, 0),
+                p3d.LVector3(0, 0, 0),
+                p3d.LVector3(0, 0, 0),
+                p3d.LVector3(0, 0, 0),
+                p3d.LVector3(0, 0, 0),
+            ]
+        else:
+            self._sh_coeffs = ibl.get_sh_coeffs_from_cube_map(self.env_map)
 
     def _recompile_pbr(self):
         pbr_defines = {
@@ -320,6 +354,9 @@ class Pipeline:
         if self.enable_hardware_skinning:
             attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
         self.render_node.set_attrib(attr)
+        self.render_node.set_shader_input('sh_coeffs', self._sh_coeffs)
+        if self.env_map:
+            self.render_node.set_shader_input('env_map', self.env_map)
 
     def _setup_tonemapping(self):
         if self._shader_ready:
@@ -455,6 +492,8 @@ def init(**kwargs):
     :type sdr_lut: `p3d.Texture`
     :param sdr_lut_factor: Factor (from 0.0 to 1.0) for how much of the LUT color to mix in, defaults to 1.0
     :type sdr_lut_factor: float
+    :param env_map: An environment map to use for indirect lighting (image-based lighting)
+    :type env_map: `panda3d.core.Texture` (must be a cube map)
     '''
 
     return Pipeline(**kwargs)

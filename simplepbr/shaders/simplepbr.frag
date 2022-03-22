@@ -44,6 +44,8 @@ uniform struct p3d_FogParameters {
 uniform vec4 p3d_ColorScale;
 uniform vec4 p3d_TexAlphaOnly;
 
+uniform vec3 sh_coeffs[9];
+
 struct FunctionParamters {
     float n_dot_l;
     float n_dot_v;
@@ -62,6 +64,8 @@ uniform sampler2D p3d_TextureMetalRoughness;
 uniform sampler2D p3d_TextureNormal;
 uniform sampler2D p3d_TextureEmission;
 
+uniform samplerCube env_map;
+
 const vec3 F0 = vec3(0.04);
 const float PI = 3.141592653589793;
 const float SPOTSMOOTH = 0.001;
@@ -71,6 +75,7 @@ varying vec3 v_position;
 varying vec4 v_color;
 varying vec2 v_texcoord;
 varying mat3 v_tbn;
+varying vec3 v_world_normal;
 #ifdef ENABLE_SHADOWS
 varying vec4 v_shadow_pos[MAX_LIGHTS];
 #endif
@@ -111,8 +116,21 @@ float microfacet_distribution(FunctionParamters func_params) {
 }
 
 // Lambert
-float diffuse_function(FunctionParamters func_params) {
+float diffuse_function() {
     return 1.0 / PI;
+}
+
+vec3 irradiance_from_sh(vec3 normal) {
+    return
+        + sh_coeffs[0] * 0.282095
+        + sh_coeffs[1] * 0.488603 * normal.x
+        + sh_coeffs[2] * 0.488603 * normal.z
+        + sh_coeffs[3] * 0.488603 * normal.y
+        + sh_coeffs[4] * 1.092548 * normal.x * normal.z
+        + sh_coeffs[5] * 1.092548 * normal.y * normal.z
+        + sh_coeffs[6] * 1.092548 * normal.y * normal.x
+        + sh_coeffs[7] * (0.946176 * normal.z * normal.z - 0.315392)
+        + sh_coeffs[8] * 0.546274 * (normal.x * normal.x - normal.y * normal.y);
 }
 
 void main() {
@@ -125,8 +143,10 @@ void main() {
     vec3 spec_color = mix(F0, base_color.rgb, metallic);
 #ifdef USE_NORMAL_MAP
     vec3 n = normalize(v_tbn * (2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0));
+    vec3 world_normal = normalize(v_world_normal); // TODO normal map
 #else
     vec3 n = normalize(v_tbn[2]);
+    vec3 world_normal = normalize(v_world_normal);
 #endif
     vec3 v = normalize(-v_position);
 
@@ -187,12 +207,20 @@ void main() {
         float V = visibility_occlusion(func_params); // V = G / (4 * n_dot_l * n_dot_v)
         float D = microfacet_distribution(func_params);
 
-        vec3 diffuse_contrib = diffuse_color * diffuse_function(func_params);
+        vec3 diffuse_contrib = diffuse_color * diffuse_function();
         vec3 spec_contrib = vec3(F * V * D);
         color.rgb += func_params.n_dot_l * lightcol * (diffuse_contrib + spec_contrib) * shadow;
     }
 
+
+    // Indirect diffuse (IBL)
+    vec3 ibl_diff = max(irradiance_from_sh(world_normal), 0.0);
+    color.rgb += diffuse_color * ibl_diff * diffuse_function();
+
+    // Indirect diffuse (ambient light)
     color.rgb += diffuse_color * p3d_LightModel.ambient.rgb * ambient_occlusion;
+
+    // Emission
     color.rgb += emission;
 
 #ifdef ENABLE_FOG

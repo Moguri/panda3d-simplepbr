@@ -25,6 +25,7 @@ uniform mat4 p3d_ProjectionMatrix;
 uniform mat4 p3d_ModelViewMatrix;
 uniform mat3 p3d_NormalMatrix;
 uniform mat4 p3d_TextureMatrix;
+uniform mat4 p3d_ModelMatrixInverseTranspose;
 
 attribute vec4 p3d_Vertex;
 attribute vec4 p3d_Color;
@@ -41,6 +42,7 @@ varying vec3 v_position;
 varying vec4 v_color;
 varying mat3 v_tbn;
 varying vec2 v_texcoord;
+varying vec3 v_world_normal;
 #ifdef ENABLE_SHADOWS
 varying vec4 v_shadow_pos[MAX_LIGHTS];
 #endif
@@ -55,9 +57,11 @@ void main() {
     );
     vec4 vert_pos4 = p3d_ModelViewMatrix * skin_matrix * p3d_Vertex;
     vec3 normal = normalize(p3d_NormalMatrix * (skin_matrix * vec4(p3d_Normal.xyz, 0.0)).xyz);
+    v_world_normal = normalize(p3d_ModelMatrixInverseTranspose * (skin_matrix * vec4(p3d_Normal, 0.0))).xyz;
 #else
     vec4 vert_pos4 = p3d_ModelViewMatrix * p3d_Vertex;
     vec3 normal = normalize(p3d_NormalMatrix * p3d_Normal);
+    v_world_normal = normalize(p3d_ModelMatrixInverseTranspose * vec4(p3d_Normal, 0.0)).xyz;
 #endif
     v_position = vec3(vert_pos4);
     v_color = p3d_Color;
