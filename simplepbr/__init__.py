@@ -73,6 +73,19 @@ def _load_shader_str(shaderpath, defines=None):
 
     return shaderstr
 
+
+def _make_shader(name, vertex, fragment, defines):
+    vertstr = _load_shader_str(vertex, defines)
+    fragstr = _load_shader_str(fragment, defines)
+    shader = p3d.Shader.make(
+        p3d.Shader.SL_GLSL,
+        vertstr,
+        fragstr
+    )
+    shader.set_filename(p3d.Shader.ST_none, name)
+    return shader
+
+
 class Pipeline:
     def __init__(
             self,
@@ -216,12 +229,11 @@ class Pipeline:
         if self.enable_hardware_skinning:
             pbr_defines['ENABLE_SKINNING'] = ''
 
-        pbr_vert_str = _load_shader_str('simplepbr.vert', pbr_defines)
-        pbr_frag_str = _load_shader_str('simplepbr.frag', pbr_defines)
-        pbrshader = p3d.Shader.make(
-            p3d.Shader.SL_GLSL,
-            vertex=pbr_vert_str,
-            fragment=pbr_frag_str,
+        pbrshader = _make_shader(
+            'pbr',
+            'simplepbr.vert',
+            'simplepbr.frag',
+            pbr_defines
         )
         attr = p3d.ShaderAttrib.make(pbrshader)
         if self.enable_hardware_skinning:
@@ -254,12 +266,11 @@ class Pipeline:
         if self.use_330:
             defines['USE_330'] = ''
 
-        post_vert_str = _load_shader_str('post.vert', defines)
-        post_frag_str = _load_shader_str('tonemap.frag', defines)
-        tonemap_shader = p3d.Shader.make(
-            p3d.Shader.SL_GLSL,
-            vertex=post_vert_str,
-            fragment=post_frag_str,
+        tonemap_shader = _make_shader(
+            'tonemap',
+            'post.vert',
+            'tonemap.frag',
+            defines
         )
         self.tonemap_quad.set_shader(tonemap_shader)
         self.tonemap_quad.set_shader_input('tex', scene_tex)
@@ -289,10 +300,11 @@ class Pipeline:
                     defines['USE_330'] = ''
                 if self.enable_hardware_skinning:
                     defines['ENABLE_SKINNING'] = ''
-                shader = p3d.Shader.make(
-                    p3d.Shader.SL_GLSL,
-                    vertex=_load_shader_str('shadow.vert', defines),
-                    fragment=_load_shader_str('shadow.frag', defines)
+                shader = _make_shader(
+                    'shadow',
+                    'shadow.vert',
+                    'shadow.frag',
+                    defines
                 )
                 attr = p3d.ShaderAttrib.make(shader)
                 if self.enable_hardware_skinning:
