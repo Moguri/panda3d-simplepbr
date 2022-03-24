@@ -25,30 +25,32 @@ def showbase(request):
     showbase.destroy()
 
 
-@pytest.mark.parametrize('showbase', ['', 'gl-version 3 2'], indirect=True)
-def test_setup(showbase):
+@pytest.mark.parametrize('use_330', [False, True])
+@pytest.mark.parametrize('use_normal_maps', [False, True])
+@pytest.mark.parametrize('enable_shadows', [False, True])
+@pytest.mark.parametrize('enable_fog', [False, True])
+@pytest.mark.parametrize('use_occlusion_maps', [False, True])
+@pytest.mark.parametrize('use_emission_maps', [False, True])
+@pytest.mark.parametrize('use_hardware_skinning', [False, True])
+def test_setup(showbase,
+               use_330,
+               use_normal_maps,
+               enable_shadows,
+               enable_fog,
+               use_occlusion_maps,
+               use_emission_maps,
+               use_hardware_skinning):
     pipeline = simplepbr.init(
         render_node=showbase.render,
         window=showbase.win,
         camera_node=showbase.cam,
-        use_normal_maps=True,
-        enable_shadows=True,
-        enable_fog=True,
-        use_occlusion_maps=True,
-    )
-
-    if not pipeline.use_330:
-        pipeline.enable_shadows = False
-
-    pipeline.verify_shaders()
-
-def test_hw_skinning_120(showbase):
-    pipeline = simplepbr.init(
-        render_node=showbase.render,
-        window=showbase.win,
-        camera_node=showbase.cam,
-        use_330=False,
-        use_hardware_skinning=True
+        use_330=use_330,
+        use_normal_maps=use_normal_maps,
+        enable_shadows=enable_shadows,
+        enable_fog=enable_fog,
+        use_occlusion_maps=use_occlusion_maps,
+        use_emission_maps=use_emission_maps,
+        use_hardware_skinning=use_hardware_skinning,
     )
 
     pipeline.verify_shaders()
