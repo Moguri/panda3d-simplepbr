@@ -290,25 +290,29 @@ class Pipeline:
             if hasattr(i.node(), 'is_shadow_caster') and i.node().is_shadow_caster()
         ]
 
+    def _create_shadow_shader_attrib(self):
+        defines = {}
+        if self.use_330:
+            defines['USE_330'] = ''
+        if self.enable_hardware_skinning:
+            defines['ENABLE_SKINNING'] = ''
+        shader = _make_shader(
+            'shadow',
+            'shadow.vert',
+            'shadow.frag',
+            defines
+        )
+        attr = p3d.ShaderAttrib.make(shader)
+        if self.enable_hardware_skinning:
+            attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
+        return attr
+
     def _update(self, task):
         # Use a simpler, faster shader for shadows
         for caster in self.get_all_casters():
             state = caster.get_initial_state()
             if not state.has_attrib(p3d.ShaderAttrib):
-                defines = {}
-                if self.use_330:
-                    defines['USE_330'] = ''
-                if self.enable_hardware_skinning:
-                    defines['ENABLE_SKINNING'] = ''
-                shader = _make_shader(
-                    'shadow',
-                    'shadow.vert',
-                    'shadow.frag',
-                    defines
-                )
-                attr = p3d.ShaderAttrib.make(shader)
-                if self.enable_hardware_skinning:
-                    attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
+                attr = self._create_shadow_shader_attrib()
                 state = state.add_attrib(attr, 1)
                 caster.set_initial_state(state)
 
@@ -317,14 +321,18 @@ class Pipeline:
     def verify_shaders(self):
         gsg = self.window.gsg
 
-        def check_node_shader(np):
-            shader = p3d.Shader(np.get_shader())
+        def check_shader(shader):
+            shader = p3d.Shader(shader)
             shader.prepare_now(gsg.prepared_objects, gsg)
             assert shader.is_prepared(gsg.prepared_objects)
             assert not shader.get_error_flag()
 
-        check_node_shader(self.render_node)
-        check_node_shader(self.tonemap_quad)
+        check_shader(self.render_node.get_shader())
+        check_shader(self.tonemap_quad.get_shader())
+
+        attr = self._create_shadow_shader_attrib()
+        check_shader(attr.get_shader())
+
 
 def init(**kwargs):
     '''Initialize the PBR render pipeline
