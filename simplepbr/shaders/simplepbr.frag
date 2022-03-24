@@ -6,6 +6,10 @@
     #define MAX_LIGHTS 8
 #endif
 
+#ifdef USE_330
+    #define texture2D texture
+#endif
+
 uniform struct p3d_MaterialParameters {
     vec4 baseColor;
     vec4 emission;

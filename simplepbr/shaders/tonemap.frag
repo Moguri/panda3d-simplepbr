@@ -1,5 +1,9 @@
 #version 120
 
+#ifdef USE_330
+    #define texture2D texture
+#endif
+
 uniform sampler2D tex;
 uniform float exposure;
 

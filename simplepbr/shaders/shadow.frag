@@ -1,5 +1,9 @@
 #version 120
 
+#ifdef USE_330
+    #define texture2D texture
+#endif
+
 uniform struct p3d_MaterialParameters {
     vec4 baseColor;
 } p3d_Material;
