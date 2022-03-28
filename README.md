@@ -18,6 +18,7 @@ The PBR shader is heavily inspired by the [Khronos glTF Sample Viewer](https://g
 * Emission maps
 * Occlusion maps
 * Basic shadow mapping for DirectionalLight and Spotlight
+* Post-tonemapping color transform via a lookup table (LUT) texture
 
 ## Notable Todos
 There are a few big things still missing and are planned to be implemented:
@@ -105,6 +106,12 @@ The `init()` function will choose typical defaults, but the following can be mod
 
 `use_hardware_skinning`
 : Force usage of hardware skinning for skeleton animations or auto-detect if `None`, defaults to `None`
+
+`sdr_lut`
+: Color LUT to use post-tonemapping
+
+`sdr_lut_factor`
+: Factor (from 0.0 to 1.0) for how much of the LUT color to mix in, defaults to 1.0
 
 Those parameters can also be modified later on by setting the related attribute of the simplepbr pipeline returned by the init() function:
 

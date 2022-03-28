@@ -1,3 +1,4 @@
+import math
 import os
 
 import panda3d.core as p3d
@@ -13,10 +14,82 @@ except ImportError:
 
 
 __all__ = [
+    'load_sdr_lut',
+    'sdr_lut_screenshot',
     'init',
-    'Pipeline'
+    'Pipeline',
 ]
 
+
+def load_sdr_lut(filename):
+    '''Load an SDR color LUT embedded in a screenshot'''
+    path = p3d.Filename(filename)
+    vfs = p3d.VirtualFileSystem.get_global_ptr()
+    failed = (
+        not vfs.resolve_filename(path, p3d.get_model_path().value)
+        or not path.is_regular_file()
+    )
+    if failed:
+        raise RuntimeError('Failed to find file {}'.format(filename))
+
+    image = p3d.PNMImage(path)
+
+    lutdim = 64
+    xsize, ysize = image.get_size()
+    tiles_per_row = xsize // lutdim
+    num_rows = math.ceil(lutdim / tiles_per_row)
+    ysize -= num_rows * lutdim
+
+    texture = p3d.Texture()
+    texture.setup_3d_texture(
+        lutdim, lutdim, lutdim,
+        p3d.Texture.T_unsigned_byte,
+        p3d.Texture.F_rgb8
+    )
+    texture.minfilter = p3d.Texture.FT_linear
+    texture.magfilter = p3d.Texture.FT_linear
+
+    for tileidx in range(lutdim):
+        xstart = tileidx % tiles_per_row * lutdim
+        ystart = tileidx // tiles_per_row * lutdim + ysize
+        islice = p3d.PNMImage(lutdim, lutdim, 3, 255)
+        islice.copy_sub_image(image, 0, 0, xstart, ystart, lutdim, lutdim)
+        texture.load(islice, tileidx, 0)
+    return texture
+
+
+def sdr_lut_screenshot(showbase, *args, **kwargs):
+    '''Take a screenshot with an embedded SDR color LUT'''
+    filename = showbase.screenshot(*args, **kwargs)
+
+    if not filename:
+        return filename
+
+    lutdim = 64
+    stepsize = 256 // lutdim
+
+    image = p3d.PNMImage(filename)
+    xsize, ysize = image.get_size()
+    tiles_per_row = xsize // lutdim
+    num_rows = math.ceil(lutdim / tiles_per_row)
+
+    image.expand_border(0, 0, num_rows * lutdim, 0, (0, 0, 0, 1))
+
+    steps = list(range(0, 256, stepsize))
+    maxoffset = len(steps) - 1
+
+    for tileidx, bcol in enumerate(steps):
+        xbase = tileidx % tiles_per_row * lutdim
+        ybase = tileidx // tiles_per_row * lutdim + ysize
+        for xoff, rcol in enumerate(steps):
+            xcoord = xbase + xoff
+            for yoff, gcol in enumerate(steps):
+                ycoord = ybase + maxoffset - yoff
+                image.set_xel_val(xcoord, ycoord, (rcol, gcol, bcol))
+
+    image.write(filename)
+
+    return filename
 
 
 def _add_shader_defines(shaderstr, defines):
@@ -104,6 +177,8 @@ class Pipeline:
             use_occlusion_maps=False,
             use_330=None,
             use_hardware_skinning=None,
+            sdr_lut=None,
+            sdr_lut_factor=1.0,
     ):
         if render_node is None:
             render_node = base.render
@@ -129,6 +204,8 @@ class Pipeline:
         self.exposure = exposure
         self.msaa_samples = msaa_samples
         self.use_occlusion_maps = use_occlusion_maps
+        self.sdr_lut = sdr_lut
+        self.sdr_lut_factor = sdr_lut_factor
 
         self._set_use_330(use_330)
         self.enable_hardware_skinning = use_hardware_skinning if use_hardware_skinning is not None else self.use_330
@@ -209,6 +286,10 @@ class Pipeline:
             self._set_use_330(value)
             self._recompile_pbr()
             resetup_tonemap()
+        elif name == 'sdr_lut' and prev_value != value:
+            resetup_tonemap()
+        elif name == 'sdr_lut_factor' and self.sdr_lut:
+            self.tonemap_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
 
     def _recompile_pbr(self):
         pbr_defines = {
@@ -265,6 +346,8 @@ class Pipeline:
         defines = {}
         if self.use_330:
             defines['USE_330'] = ''
+        if self.sdr_lut:
+            defines['USE_SDR_LUT'] = ''
 
         tonemap_shader = _make_shader(
             'tonemap',
@@ -275,6 +358,9 @@ class Pipeline:
         self.tonemap_quad.set_shader(tonemap_shader)
         self.tonemap_quad.set_shader_input('tex', scene_tex)
         self.tonemap_quad.set_shader_input('exposure', self.exposure)
+        if self.sdr_lut:
+            self.tonemap_quad.set_shader_input('sdr_lut', self.sdr_lut)
+            self.tonemap_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
 
     def get_all_casters(self):
         engine = p3d.GraphicsEngine.get_global_ptr()
@@ -318,6 +404,7 @@ class Pipeline:
 
         return task.cont
 
+
     def verify_shaders(self):
         gsg = self.window.gsg
 
@@ -337,11 +424,11 @@ class Pipeline:
 def init(**kwargs):
     '''Initialize the PBR render pipeline
     :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
-    :type render_node: `panda3d.core.NodePath`
+    :type render_node: `p3d.NodePath`
     :param window: The window to attach the framebuffer too, defaults to `base.win` if `None`
-    :type window: `panda3d.core.GraphicsOutput
+    :type window: `p3d.GraphicsOutput
     :param camera_node: The NodePath of the camera to use when rendering the scene, defaults to `base.cam` if `None`
-    :type camera_node: `panda3d.core.NodePath
+    :type camera_node: `p3d.NodePath
     :param msaa_samples: The number of samples to use for multisample anti-aliasing, defaults to 4
     :type msaa_samples: int
     :param max_lights: The maximum number of lights to render, defaults to 8
@@ -364,6 +451,10 @@ def init(**kwargs):
     :param use_hardware_skinning: Force usage of hardware skinning for skeleton animations
         (auto-detect if None, defaults to None)
     :type use_hardware_skinning: bool or None
+    :param sdr_lut: Color LUT to use post-tonemapping
+    :type sdr_lut: `p3d.Texture`
+    :param sdr_lut_factor: Factor (from 0.0 to 1.0) for how much of the LUT color to mix in, defaults to 1.0
+    :type sdr_lut_factor: float
     '''
 
     return Pipeline(**kwargs)

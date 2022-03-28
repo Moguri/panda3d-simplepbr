@@ -1,29 +1,6 @@
-import panda3d.core as p3d
 import pytest #pylint:disable=wrong-import-order
 
 import simplepbr
-
-#pylint:disable=redefined-outer-name
-#pylint:disable=import-outside-toplevel
-
-PRC_BASE = """
-window-type offscreen
-framebuffer-hardware false
-gl-debug true
-audio-library-name null
-"""
-
-
-@pytest.fixture
-def showbase(request):
-    extra_prc = request.param if hasattr(request, 'param') else ''
-    from direct.showbase.ShowBase import ShowBase
-    print(extra_prc)
-    p3d.load_prc_file_data('', f'{PRC_BASE}\n{extra_prc}')
-    showbase = ShowBase()
-    yield showbase
-    showbase.destroy()
-
 
 @pytest.mark.parametrize('showbase', ['', 'gl-version 3 2'], indirect=True)
 @pytest.mark.parametrize('use_normal_maps', [False, True])
