@@ -83,7 +83,7 @@ out vec4 o_color;
 vec3 specular_reflection(FunctionParamters func_params) {
     vec3 f0 = func_params.reflection0;
     float v_dot_h= func_params.v_dot_h;
-    return f0 + (1 - f0) * pow(2, (-5.55473 * v_dot_h - 6.98316) * v_dot_h);
+    return f0 + (vec3(1.0) - f0) * pow(2.0, (-5.55473 * v_dot_h - 6.98316) * v_dot_h);
 }
 
 // Smith GGX with optional fast sqrt approximation (see https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg))
