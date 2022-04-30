@@ -137,12 +137,18 @@ def _load_shader_str(shaderpath, defines=None):
     shaderstr = _add_shader_defines(shaderstr, defines)
 
     if 'USE_330' in defines:
-        shaderstr = shaderstr.replace('#version 120', '#version 330')
+        versionstr = '#version 330'
+        if 'USE_WEBGL' in defines:
+            versionstr = '#version 300 es\nprecision highp float;\n'
+
+        shaderstr = shaderstr.replace('#version 120', versionstr)
         if shaderpath.endswith('vert'):
             shaderstr = shaderstr.replace('varying ', 'out ')
             shaderstr = shaderstr.replace('attribute ', 'in ')
         else:
             shaderstr = shaderstr.replace('varying ', 'in ')
+    elif 'USE_WEBGL' in defines:
+        shaderstr = shaderstr.replace('#version 120', '#version 100\nprecision highp float;\n')
 
     return shaderstr
 
@@ -209,6 +215,8 @@ class Pipeline:
 
         self._set_use_330(use_330)
         self.enable_hardware_skinning = use_hardware_skinning if use_hardware_skinning is not None else self.use_330
+
+        self._is_web_gl = 'WebGL' in self.window.type.name
 
         # Create a FilterManager instance
         self.manager = FilterManager(window, camera_node)
@@ -309,6 +317,8 @@ class Pipeline:
             pbr_defines['USE_330'] = ''
         if self.enable_hardware_skinning:
             pbr_defines['ENABLE_SKINNING'] = ''
+        if self._is_web_gl:
+            pbr_defines['USE_WEBGL'] = ''
 
         pbrshader = _make_shader(
             'pbr',
@@ -348,6 +358,8 @@ class Pipeline:
             defines['USE_330'] = ''
         if self.sdr_lut:
             defines['USE_SDR_LUT'] = ''
+        if self._is_web_gl:
+            defines['USE_WEBGL'] = ''
 
         tonemap_shader = _make_shader(
             'tonemap',
