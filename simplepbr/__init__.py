@@ -6,7 +6,7 @@ import panda3d.core as p3d
 from direct.filter.FilterManager import FilterManager
 
 from .version import __version__
-from .import ibl
+from .envmap import EnvMap
 
 try:
     from .shaders import shaders
@@ -19,6 +19,7 @@ __all__ = [
     'sdr_lut_screenshot',
     'init',
     'Pipeline',
+    'EnvMap',
 ]
 
 
@@ -222,17 +223,9 @@ class Pipeline:
         self.render_node.set_antialias(p3d.AntialiasAttrib.M_auto)
 
         # Setup env map to be used for irradiance
-        if not env_map:
-            env_map = p3d.Texture('env_map_fallback')
-            env_map.setup_cube_map(
-                2,
-                p3d.Texture.T_unsigned_byte,
-                p3d.Texture.F_rgb
-            )
-            env_map.set_clear_color(p3d.LColor(0, 0, 0, 1))
-            env_map.make_ram_image()
+        if env_map is None:
+            env_map = EnvMap.create_empty()
         self.env_map = env_map
-        self._gather_sh_coeffs()
 
         # PBR Shader
         self._recompile_pbr()
@@ -306,24 +299,9 @@ class Pipeline:
         elif name == 'sdr_lut_factor' and self.sdr_lut:
             self.tonemap_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
         elif name == 'env_map':
-            self._gather_sh_coeffs()
+            if value is None:
+                self.env_map = EnvMap.create_empty()
             self._recompile_pbr()
-
-    def _gather_sh_coeffs(self):
-        if self.env_map is None:
-            self._sh_coeffs = [
-                p3d.LVector3(0, 0, 0),
-                p3d.LVector3(0, 0, 0),
-                p3d.LVector3(0, 0, 0),
-                p3d.LVector3(0, 0, 0),
-                p3d.LVector3(0, 0, 0),
-                p3d.LVector3(0, 0, 0),
-                p3d.LVector3(0, 0, 0),
-                p3d.LVector3(0, 0, 0),
-                p3d.LVector3(0, 0, 0),
-            ]
-        else:
-            self._sh_coeffs = ibl.get_sh_coeffs_from_cube_map(self.env_map)
 
     def _recompile_pbr(self):
         pbr_defines = {
@@ -354,9 +332,8 @@ class Pipeline:
         if self.enable_hardware_skinning:
             attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
         self.render_node.set_attrib(attr)
-        self.render_node.set_shader_input('sh_coeffs', self._sh_coeffs)
-        if self.env_map:
-            self.render_node.set_shader_input('env_map', self.env_map)
+        self.render_node.set_shader_input('sh_coeffs', self.env_map.sh_coefficients)
+        self.render_node.set_shader_input('env_map', self.env_map.cubemap)
 
     def _setup_tonemapping(self):
         if self._shader_ready:
