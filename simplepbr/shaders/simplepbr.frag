@@ -8,6 +8,10 @@
 
 #ifdef USE_330
     #define texture2D texture
+    #define textureCube texture
+    #define textureCubeLod textureLod
+#else
+    #extension GL_ARB_shader_texture_lod : require
 #endif
 
 uniform struct p3d_MaterialParameters {
@@ -64,7 +68,8 @@ uniform sampler2D p3d_TextureMetalRoughness;
 uniform sampler2D p3d_TextureNormal;
 uniform sampler2D p3d_TextureEmission;
 
-uniform samplerCube env_map;
+uniform sampler2D brdf_lut;
+uniform samplerCube filtered_env_map;
 
 const vec3 F0 = vec3(0.04);
 const float PI = 3.141592653589793;
@@ -84,11 +89,17 @@ varying vec4 v_shadow_pos[MAX_LIGHTS];
 out vec4 o_color;
 #endif
 
+const float MAX_REFLECTION_LOD = 4.0f;
+
 // Schlick's Fresnel approximation with Spherical Gaussian approximation to replace the power
 vec3 specular_reflection(FunctionParamters func_params) {
     vec3 f0 = func_params.reflection0;
     float v_dot_h= func_params.v_dot_h;
     return f0 + (vec3(1.0) - f0) * pow(2.0, (-5.55473 * v_dot_h - 6.98316) * v_dot_h);
+}
+
+vec3 fresnelSchlickRoughness(float u, vec3 f0, float roughness) {
+    return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - u, 0.0, 1.0), 5.0);
 }
 
 // Smith GGX with optional fast sqrt approximation (see https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg))
@@ -149,6 +160,7 @@ void main() {
     vec3 world_normal = normalize(v_world_normal);
 #endif
     vec3 v = normalize(-v_position);
+    vec3 r = reflect(-v, n);
 
 #ifdef USE_OCCLUSION_MAP
     float ambient_occlusion = metal_rough.r;
@@ -163,6 +175,8 @@ void main() {
 #endif
 
     vec4 color = vec4(vec3(0.0), base_color.a) + p3d_TexAlphaOnly;
+
+    float n_dot_v = clamp(abs(dot(n, v)), 0.0, 1.0);
 
     for (int i = 0; i < p3d_LightSource.length(); ++i) {
         vec3 lightcol = p3d_LightSource[i].diffuse.rgb;
@@ -193,7 +207,7 @@ void main() {
 
         FunctionParamters func_params;
         func_params.n_dot_l = clamp(dot(n, l), 0.0, 1.0);
-        func_params.n_dot_v = clamp(abs(dot(n, v)), 0.0, 1.0);
+        func_params.n_dot_v = n_dot_v;
         func_params.n_dot_h = clamp(dot(n, h), 0.0, 1.0);
         func_params.l_dot_h = clamp(dot(l, h), 0.0, 1.0);
         func_params.v_dot_h = clamp(dot(v, h), 0.0, 1.0);
@@ -213,15 +227,21 @@ void main() {
     }
 
 
-    // Indirect diffuse (IBL)
-    vec3 ibl_diff = max(irradiance_from_sh(world_normal), 0.0);
-    color.rgb += diffuse_color * ibl_diff * diffuse_function();
+    // Indirect diffuse + specular (IBL)
+    vec3 ibl_f = fresnelSchlickRoughness(n_dot_v, F0, perceptual_roughness);
+    vec3 ibl_diff = base_color.rgb * max(irradiance_from_sh(world_normal), 0.0) * diffuse_function();
+
+    vec2 env_brdf = texture2D(brdf_lut, vec2(n_dot_v, perceptual_roughness)).rg;
+    vec3 ibl_spec_color = textureCubeLod(filtered_env_map, r, perceptual_roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 ibl_spec = ibl_spec_color * (ibl_f * env_brdf.x + env_brdf.y);
+    color.rgb += ((1.0 - ibl_f) * ibl_diff  + ibl_spec) * ambient_occlusion;
 
     // Indirect diffuse (ambient light)
     color.rgb += diffuse_color * p3d_LightModel.ambient.rgb * ambient_occlusion;
 
     // Emission
     color.rgb += emission;
+
 
 #ifdef ENABLE_FOG
     // Exponential fog

@@ -333,7 +333,8 @@ class Pipeline:
             attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
         self.render_node.set_attrib(attr)
         self.render_node.set_shader_input('sh_coeffs', self.env_map.sh_coefficients)
-        self.render_node.set_shader_input('env_map', self.env_map.cubemap)
+        self.render_node.set_shader_input('brdf_lut', self.env_map.brdf_lut)
+        self.render_node.set_shader_input('filtered_env_map', self.env_map.filtered_env_map)
 
     def _setup_tonemapping(self):
         if self._shader_ready:
