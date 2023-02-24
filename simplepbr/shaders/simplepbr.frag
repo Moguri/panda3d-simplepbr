@@ -80,7 +80,7 @@ varying vec3 v_position;
 varying vec4 v_color;
 varying vec2 v_texcoord;
 varying mat3 v_tbn;
-varying vec3 v_world_normal;
+varying mat3 v_world_tbn;
 #ifdef ENABLE_SHADOWS
 varying vec4 v_shadow_pos[MAX_LIGHTS];
 #endif
@@ -153,11 +153,12 @@ void main() {
     vec3 diffuse_color = (base_color.rgb * (vec3(1.0) - F0)) * (1.0 - metallic);
     vec3 spec_color = mix(F0, base_color.rgb, metallic);
 #ifdef USE_NORMAL_MAP
-    vec3 n = normalize(v_tbn * (2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0));
-    vec3 world_normal = normalize(v_world_normal); // TODO normal map
+    vec3 normalmap = 2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0;
+    vec3 n = normalize(v_tbn * normalmap);
+    vec3 world_normal = normalize(v_world_tbn * normalmap);
 #else
     vec3 n = normalize(v_tbn[2]);
-    vec3 world_normal = normalize(v_world_normal);
+    vec3 world_normal = normalize(v_world_tbn[2]);
 #endif
     vec3 v = normalize(-v_position);
     vec3 r = reflect(-v, n);

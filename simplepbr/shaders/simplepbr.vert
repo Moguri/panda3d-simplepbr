@@ -23,6 +23,7 @@ uniform mat4 p3d_TransformTable[100];
 
 uniform mat4 p3d_ProjectionMatrix;
 uniform mat4 p3d_ModelViewMatrix;
+uniform mat4 p3d_ModelMatrix;
 uniform mat3 p3d_NormalMatrix;
 uniform mat4 p3d_TextureMatrix;
 uniform mat4 p3d_ModelMatrixInverseTranspose;
@@ -42,7 +43,7 @@ varying vec3 v_position;
 varying vec4 v_color;
 varying mat3 v_tbn;
 varying vec2 v_texcoord;
-varying vec3 v_world_normal;
+varying mat3 v_world_tbn;
 #ifdef ENABLE_SHADOWS
 varying vec4 v_shadow_pos[MAX_LIGHTS];
 #endif
@@ -56,12 +57,10 @@ void main() {
         p3d_TransformTable[int(transform_index.w)] * transform_weight.w
     );
     vec4 vert_pos4 = p3d_ModelViewMatrix * skin_matrix * p3d_Vertex;
-    vec3 normal = normalize(p3d_NormalMatrix * (skin_matrix * vec4(p3d_Normal.xyz, 0.0)).xyz);
-    v_world_normal = normalize(p3d_ModelMatrixInverseTranspose * (skin_matrix * vec4(p3d_Normal, 0.0))).xyz;
+    vec4 model_normal = skin_matrix * vec4(p3d_Normal, 0.0);
 #else
     vec4 vert_pos4 = p3d_ModelViewMatrix * p3d_Vertex;
-    vec3 normal = normalize(p3d_NormalMatrix * p3d_Normal);
-    v_world_normal = normalize(p3d_ModelMatrixInverseTranspose * vec4(p3d_Normal, 0.0)).xyz;
+    vec4 model_normal = vec4(p3d_Normal, 0.0);
 #endif
     v_position = vec3(vert_pos4);
     v_color = p3d_Color;
@@ -72,12 +71,22 @@ void main() {
     }
 #endif
 
+    vec3 normal = normalize(p3d_NormalMatrix * model_normal.xyz);
     vec3 tangent = normalize(vec3(p3d_ModelViewMatrix * vec4(p3d_Tangent.xyz, 0.0)));
     vec3 bitangent = cross(normal, tangent) * p3d_Tangent.w;
     v_tbn = mat3(
         tangent,
         bitangent,
         normal
+    );
+
+    vec3 world_normal = normalize(p3d_ModelMatrixInverseTranspose * model_normal).xyz;
+    vec3 world_tangent = normalize(vec3(p3d_ModelMatrix * vec4(p3d_Tangent.xyz, 0.0)));
+    vec3 world_bitangent = cross(world_normal, world_tangent) * p3d_Tangent.w;
+    v_world_tbn = mat3(
+            world_tangent,
+            world_bitangent,
+            world_normal
     );
 
     gl_Position = p3d_ProjectionMatrix * vert_pos4;
