@@ -373,7 +373,7 @@ class Pipeline:
         return [
             i.node()
             for i in cameras
-            if hasattr(i.node(), 'is_shadow_caster') and i.node().is_shadow_caster()
+            if not i.is_empty() and hasattr(i.node(), 'is_shadow_caster') and i.node().is_shadow_caster()
         ]
 
     def _create_shadow_shader_attrib(self):
