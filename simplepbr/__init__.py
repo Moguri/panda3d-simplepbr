@@ -2,6 +2,7 @@ import math
 import os
 
 import panda3d.core as p3d
+from panda3d.core import NodePath, TextureStage, TexGenAttrib
 
 from direct.filter.FilterManager import FilterManager
 
@@ -179,6 +180,7 @@ class Pipeline:
             use_hardware_skinning=None,
             sdr_lut=None,
             sdr_lut_factor=1.0,
+            use_env_map=False,
     ):
         if render_node is None:
             render_node = base.render
@@ -206,6 +208,7 @@ class Pipeline:
         self.use_occlusion_maps = use_occlusion_maps
         self.sdr_lut = sdr_lut
         self.sdr_lut_factor = sdr_lut_factor
+        self.use_env_map = use_env_map
 
         self._set_use_330(use_330)
         self.enable_hardware_skinning = use_hardware_skinning if use_hardware_skinning is not None else self.use_330
@@ -263,6 +266,7 @@ class Pipeline:
             'enable_shadows',
             'enable_fog',
             'use_occlusion_maps',
+            'use_env_map',
         ]
         def resetup_tonemap():
             # Destroy previous buffers so we can re-create
@@ -309,6 +313,8 @@ class Pipeline:
             pbr_defines['USE_330'] = ''
         if self.enable_hardware_skinning:
             pbr_defines['ENABLE_SKINNING'] = ''
+        if self.use_env_map:
+            pbr_defines['USE_ENV_MAP'] = ''
 
         pbrshader = _make_shader(
             'pbr',
@@ -316,10 +322,23 @@ class Pipeline:
             'simplepbr.frag',
             pbr_defines
         )
+        def apply_env_map(in_shader=self.render_node.get_shader(),intensity=50):
+            cube_rig = NodePath('cuberig')
+            self.cube_buffer = base.win.make_cube_map('cubemap', 512, cube_rig)
+            cube_rig.reparent_to(base.render)
+            cube_rig.set_pos(0,0,10)
+            cube_rig.set_hpr(0,0,0)
+
+            base.render.set_tex_gen(TextureStage.get_default(), TexGenAttrib.MWorldCubeMap)
+            in_shader.set_shader_input("env_intensity", intensity)
+            in_shader.set_shader_input("cubemaptex", self.cube_buffer.get_texture())
+
         attr = p3d.ShaderAttrib.make(pbrshader)
         if self.enable_hardware_skinning:
             attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
         self.render_node.set_attrib(attr)
+        if self.use_env_map:
+            apply_env_map(in_shader=self.render_node)
 
     def _setup_tonemapping(self):
         if self._shader_ready:
@@ -404,7 +423,6 @@ class Pipeline:
 
         return task.cont
 
-
     def verify_shaders(self):
         gsg = self.window.gsg
 
@@ -455,6 +473,8 @@ def init(**kwargs):
     :type sdr_lut: `p3d.Texture`
     :param sdr_lut_factor: Factor (from 0.0 to 1.0) for how much of the LUT color to mix in, defaults to 1.0
     :type sdr_lut_factor: float
+    :param use_env_map: Roughness-mediated environment map, Input samplerCube, Intensity (float) for strength of effect
+    :type use_env_map: bool
     '''
 
     return Pipeline(**kwargs)

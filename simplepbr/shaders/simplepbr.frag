@@ -61,6 +61,10 @@ uniform sampler2D p3d_TextureBaseColor;
 uniform sampler2D p3d_TextureMetalRoughness;
 uniform sampler2D p3d_TextureNormal;
 uniform sampler2D p3d_TextureEmission;
+#ifdef USE_ENV_MAP
+uniform samplerCube cubemaptex;
+uniform float env_intensity;
+#endif
 
 const vec3 F0 = vec3(0.04);
 const float PI = 3.141592653589793;
@@ -129,7 +133,9 @@ void main() {
     vec3 n = normalize(v_tbn[2]);
 #endif
     vec3 v = normalize(-v_position);
-
+#ifdef USE_ENV_MAP
+    vec4 env_map = texture(cubemaptex, v) * env_intensity;
+#endif
 #ifdef USE_OCCLUSION_MAP
     float ambient_occlusion = metal_rough.r;
 #else
@@ -182,12 +188,17 @@ void main() {
         func_params.reflection0 = spec_color;
         func_params.diffuse_color = diffuse_color;
         func_params.specular_color = spec_color;
-
+#ifdef USE_ENV_MAP
+		vec4 env_map_rough = env_map * alpha_roughness;
+#endif
         vec3 F = specular_reflection(func_params);
         float V = visibility_occlusion(func_params); // V = G / (4 * n_dot_l * n_dot_v)
         float D = microfacet_distribution(func_params);
-
+#ifdef USE_ENV_MAP
+        vec3 diffuse_contrib = (diffuse_color * env_map_rough.xyz) * diffuse_function(func_params);
+#else
         vec3 diffuse_contrib = diffuse_color * diffuse_function(func_params);
+#endif
         vec3 spec_contrib = vec3(F * V * D);
         color.rgb += func_params.n_dot_l * lightcol * (diffuse_contrib + spec_contrib) * shadow;
     }
