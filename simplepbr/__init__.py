@@ -13,6 +13,11 @@ try:
 except ImportError:
     shaders = None
 
+try:
+    from .textures import textures
+except ImportError:
+    textures = None
+
 
 __all__ = [
     'load_sdr_lut',
@@ -119,6 +124,24 @@ def _add_shader_defines(shaderstr, defines):
     )
 
 
+def _load_texture(texturepath):
+    texturedir = p3d.Filename.from_os_specific(
+        os.path.join(
+            os.path.dirname(__file__),
+            'textures'
+        )
+    )
+    if textures:
+        texture = p3d.Texture.make_from_txo(
+            p3d.StringStream(textures[texturepath]),
+            (texturedir / texturepath).get_fullpath()
+        )
+    else:
+        texture = p3d.TexturePool.load_texture(texturedir / texturepath)
+
+    return texture
+
+
 def _load_shader_str(shaderpath, defines=None):
     if shaders:
         shaderstr = shaders[shaderpath]
@@ -221,6 +244,8 @@ class Pipeline:
 
         # Make sure we have AA for if/when MSAA is enabled
         self.render_node.set_antialias(p3d.AntialiasAttrib.M_auto)
+
+        self._brdf_lut = _load_texture('brdf_lut.txo')
 
         # Setup env map to be used for irradiance
         if env_map is None:
@@ -333,7 +358,7 @@ class Pipeline:
             attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
         self.render_node.set_attrib(attr)
         self.render_node.set_shader_input('sh_coeffs', self.env_map.sh_coefficients)
-        self.render_node.set_shader_input('brdf_lut', self.env_map.brdf_lut)
+        self.render_node.set_shader_input('brdf_lut', self._brdf_lut)
         self.render_node.set_shader_input('filtered_env_map', self.env_map.filtered_env_map)
 
     def _setup_tonemapping(self):

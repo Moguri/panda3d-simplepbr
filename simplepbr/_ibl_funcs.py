@@ -1,5 +1,7 @@
 # pylint: disable=invalid-name
+import functools
 import math
+import struct
 import time
 
 
@@ -133,3 +135,106 @@ def get_sh_coeffs_from_cube_map(texcubemap, irradiance=True):
         f'Spherical harmonics coefficients calculated in {tottime:.3f}ms'
     )
     return shcoeffs
+
+
+def van_der_corput(idx: int, base: int = 2) -> float:
+    result = 0
+    denom = 1
+
+    while idx:
+        denom *= base
+        idx, rem = divmod(idx, base)
+        result += rem / denom
+
+    return result
+
+
+@functools.cache
+def hammersley(idx: int, maxnum: int) -> p3d.LVector2:
+    return p3d.LVector2(idx / maxnum, van_der_corput(idx))
+
+
+@functools.cache
+def importance_sample_ggx(xi: p3d.LVector2, normal: p3d.LVector3, roughness: float) -> p3d.LVector3:
+    alpha = roughness * roughness
+
+    phi = 2 * math.pi * xi.x
+    costheta = math.sqrt((1 - xi.y) / (1 + (alpha * alpha - 1) * xi.y))
+    sintheta = math.sqrt(1 - costheta * costheta)
+
+    hvec = p3d.LVector3(
+        math.cos(phi) * sintheta,
+        math.sin(phi) * sintheta,
+        costheta
+    )
+
+    upvec = p3d.LVector3(0, 0, 1) if abs(normal.z < 0.999) else p3d.LVector3(1, 0, 0)
+    tangent = upvec.cross(normal)
+    tangent.normalize()
+    bitangent = normal.cross(tangent)
+
+    return (tangent * hvec.x + bitangent * hvec.y + normal * hvec.z).normalized()
+
+def geometry_schlick_ggx(ndotv: float, roughness: float) -> float:
+    alpha = roughness
+    kibl = alpha * alpha / 2
+
+    return ndotv / (ndotv * (1 - kibl) + kibl)
+
+
+def geometry_smith(normal: p3d.LVector3, view: p3d.LVector3, light: p3d.LVector3, roughness: float) -> float:
+    ndotv = max(normal.dot(view), 0)
+    ndotl = max(normal.dot(light), 0)
+
+    return geometry_schlick_ggx(ndotv, roughness) * geometry_schlick_ggx(ndotl, roughness)
+
+
+def integrate_brdf(ndotv: float, roughness: float, num_samples: int = 1024) -> p3d.LVector2:
+    ndotv = max(ndotv, 0.0001)
+    view = p3d.LVector3(
+        math.sqrt(1 - ndotv * ndotv),
+        0,
+        ndotv
+    )
+    normal = p3d.LVector3(0, 0, 1)
+    retval = p3d.LVector2(0, 0)
+
+    def calc_sample(idx: int):
+        xi = hammersley(idx, num_samples)
+        hvec = importance_sample_ggx(xi, normal, roughness)
+        light = hvec * 2 * view.dot(hvec) - view
+        light.normalize()
+
+        ndotl = max(light.z, 0)
+
+        if ndotl > 0:
+            ndoth = max(hvec.z, 0)
+            vdoth = max(view.dot(hvec), 0)
+            geom = geometry_smith(normal, view, light, roughness)
+            geom_vis = (geom * vdoth) / (ndoth * ndotv)
+            fresnel = math.pow(1 - vdoth, 5)
+
+            retval.x += (1 - fresnel) * geom_vis
+            retval.y += fresnel * geom_vis
+
+    _ = [calc_sample(idx) for idx in range(num_samples)]
+
+    retval /= num_samples
+    return retval
+
+
+def gen_brdf_lut(lutsize: int, num_samples: int = 1024) -> p3d.Texture:
+    brdflut = p3d.Texture('brdf_lut')
+    brdflut.setup_2d_texture(lutsize, lutsize, p3d.Texture.T_float, p3d.Texture.F_rg16)
+
+    handle = brdflut.modify_ram_image()
+    pixelsize = brdflut.component_width * brdflut.num_components
+    xsize = brdflut.x_size
+
+    for ycoord in range(lutsize):
+        for xcoord in range(lutsize):
+            idx = (ycoord * xsize + xcoord) * pixelsize
+            result = integrate_brdf(xcoord / lutsize, ycoord / lutsize, num_samples)
+            struct.pack_into('ff', handle, idx, result[1], result[0])
+
+    return brdflut

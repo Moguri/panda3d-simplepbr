@@ -3,11 +3,11 @@ from direct.stdpy import threading
 
 from . import _ibl_funcs as iblfuncs
 
+
 class EnvMap:
     def __init__(self, cubemap: p3d.Texture):
         self.cubemap: p3d.Texture = cubemap
         self.sh_coefficients: p3d.PTA_LVecBase3f = p3d.PTA_LVecBase3f.empty_array(9)
-        self.brdf_lut = p3d.Texture('brdf_lut')
         self.filtered_env_map = p3d.Texture('filtered_env_map')
 
         self.prepare()
@@ -16,14 +16,6 @@ class EnvMap:
         return self.cubemap.name != 'env_map_fallback'
 
     def prepare(self):
-        self.brdf_lut.setup_2d_texture(
-            512,
-            512,
-            p3d.Texture.T_float,
-            p3d.Texture.F_rg16,
-        )
-        self.brdf_lut.set_clear_color(p3d.LColor(1, 0, 0, 0))
-
         self.filtered_env_map.setup_cube_map(1, p3d.Texture.T_float, p3d.Texture.F_rgba16)
 
         def calc_sh(future):
