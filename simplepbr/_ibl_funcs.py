@@ -2,8 +2,6 @@
 import functools
 import math
 import struct
-import time
-
 
 import panda3d.core as p3d
 
@@ -62,9 +60,7 @@ def get_sh_basis_from_vector(vec):
         0.546274 * (vecx * vecx - vecy * vecy),
     )
 
-
-def get_sh_coeffs_from_cube_map(texcubemap, irradiance=True):
-    starttime = time.perf_counter()
+def get_sh_coeffs_from_cube_map(texcubemap):
     if texcubemap.z_size != 6:
         raise RuntimeError('supplied texture was not a cube map')
     if texcubemap.x_size != texcubemap.y_size:
@@ -114,26 +110,21 @@ def get_sh_coeffs_from_cube_map(texcubemap, irradiance=True):
         for idx, value in enumerate(basis):
             shcoeffs[idx] += color * value
 
-    if irradiance:
-        # Convolution with cosine lobe for irradiance
-        # this is actually for reconstruction, but we can bake it in here to avoid
-        # extra math in the shader
-        a0 = 3.141593 # pi
-        a1 = 2.094395 # 2/3 pi
-        a2 = 0.785398 # 1/4 pi
-        shcoeffs[0] *= a0
-        shcoeffs[1] *= a1
-        shcoeffs[2] *= a1
-        shcoeffs[3] *= a1
-        shcoeffs[4] *= a2
-        shcoeffs[5] *= a2
-        shcoeffs[6] *= a2
-        shcoeffs[7] *= a2
+    # Convolution with cosine lobe for irradiance
+    # this is actually for reconstruction, but we can bake it in here to avoid
+    # extra math in the shader
+    a0 = 3.141593 # pi
+    a1 = 2.094395 # 2/3 pi
+    a2 = 0.785398 # 1/4 pi
+    shcoeffs[0] *= a0
+    shcoeffs[1] *= a1
+    shcoeffs[2] *= a1
+    shcoeffs[3] *= a1
+    shcoeffs[4] *= a2
+    shcoeffs[5] *= a2
+    shcoeffs[6] *= a2
+    shcoeffs[7] *= a2
 
-    tottime = (time.perf_counter() - starttime) * 1000
-    print(
-        f'Spherical harmonics coefficients calculated in {tottime:.3f}ms'
-    )
     return shcoeffs
 
 

@@ -1,3 +1,5 @@
+import time
+
 import panda3d.core as p3d
 from direct.stdpy import threading
 
@@ -19,10 +21,15 @@ class EnvMap:
         self.filtered_env_map.setup_cube_map(1, p3d.Texture.T_float, p3d.Texture.F_rgba16)
 
         def calc_sh(future):
+            starttime = time.perf_counter()
             shcoeffs = iblfuncs.get_sh_coeffs_from_cube_map(self.cubemap)
             for idx, val in enumerate(shcoeffs):
                 self.sh_coefficients[idx] = val
 
+            tottime = (time.perf_counter() - starttime) * 1000
+            print(
+                f'Spherical harmonics coefficients for {self.cubemap.name} calculated in {tottime:.3f}ms'
+            )
             future.set_result(self)
 
         def filter_env_map(future):
