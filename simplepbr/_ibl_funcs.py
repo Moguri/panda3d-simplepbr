@@ -24,8 +24,7 @@ def calc_vector(dim, face_idx, xloc, yloc):
     elif face_idx == 5:
         vec = p3d.LVector3(-xcoord, ycoord, -1)
 
-    # vec.normalize()
-    return vec.x, vec.y, vec.z
+    return vec
 
 
 def calc_sphere_quadrant_area(x, y):
@@ -229,3 +228,54 @@ def gen_brdf_lut(lutsize: int, num_samples: int = 1024) -> p3d.Texture:
             struct.pack_into('ff', handle, idx, result[1], result[0])
 
     return brdflut
+
+
+def filter_sample(pos: p3d.LVector3, envmap: p3d.TexturePeeker, roughness: float, num_samples: int) -> p3d.LVector3:
+    view = normal = pos.normalized()
+    totweight = 0.0
+    retval = p3d.LVector3(0.0, 0.0, 0.0)
+
+    for idx in range(num_samples):
+        xi = hammersley(idx, num_samples)
+        hvec = importance_sample_ggx(xi, normal, roughness)
+        light = hvec * 2.0 * view.dot(hvec) - view
+        light.normalize()
+
+        ndotl = max(normal.dot(light), 0.0)
+        if ndotl > 0.0:
+            color = p3d.LColor()
+            envmap.lookup(color, *pos)
+            retval += color.xyz * ndotl
+            totweight += ndotl
+
+    retval /= totweight
+    return retval
+
+
+def filter_env_map(envmap: p3d.Texture, filtered: p3d.Texture, *, size: int = 16, num_mipmaps: int = 4, num_samples: int = 4) -> p3d.Texture:
+    peeker = envmap.peek()
+
+    filtered.setup_cube_map(size, p3d.Texture.T_float, p3d.Texture.F_rgb32)
+    filtered.magfilter = p3d.SamplerState.FT_linear
+    filtered.minfilter = p3d.SamplerState.FT_linear_mipmap_linear
+
+    pixelsize = filtered.component_width * filtered.num_components
+
+    for i in range(num_mipmaps):
+        mipsize = int(size * 0.5 ** i)
+        roughness = i / num_mipmaps
+        texdata = p3d.PTA_uchar.empty_array(mipsize * mipsize * 6 * pixelsize)
+        coords = (
+            (face, x, y)
+            for face in range(6)
+            for x in range(mipsize)
+            for y in range(mipsize)
+        )
+
+        for coord in coords:
+            face, xcoord, ycoord = coord
+            offset = ((face * mipsize + ycoord) * mipsize + xcoord) * pixelsize
+            pos = calc_vector(mipsize, face, xcoord, ycoord)
+            result = filter_sample(pos, peeker, roughness, num_samples)
+            struct.pack_into('fff', texdata, offset, result[2], result[1], result[0])
+        filtered.set_ram_mipmap_image(i, texdata)
