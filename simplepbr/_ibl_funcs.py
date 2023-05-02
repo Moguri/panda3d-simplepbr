@@ -2,38 +2,52 @@
 import functools
 import math
 import struct
+import typing
 
 import panda3d.core as p3d
 
+Vec2TupleType = tuple[float, float]
+Vec3TupleType = tuple[float, float, float]
+SHTupleType = tuple[
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+    float,
+]
 
-def calc_vector(dim, face_idx, xloc, yloc):
+def calc_vector(dim: int, face_idx: int, xloc: int, yloc: int) -> Vec3TupleType:
     # Remap [0, dimension] to [-1, 1]
-    xcoord = xloc / (dim - 1) * 2 - 1
-    ycoord = 1 - yloc / (dim - 1) * 2
+    xcoord = float(xloc) / float((dim - 1) * 2 - 1)
+    ycoord = float(1 - yloc) / float((dim - 1) * 2)
 
     if face_idx == 0:
-        vec = p3d.LVector3(1, ycoord, -xcoord)
+        vec = (1.0, ycoord, -xcoord)
     elif face_idx == 1:
-        vec = p3d.LVector3(-1, ycoord, xcoord)
+        vec = (-1.0, ycoord, xcoord)
     elif face_idx == 2:
-        vec = p3d.LVector3(xcoord, 1, -ycoord)
+        vec = (xcoord, 1.0, -ycoord)
     elif face_idx == 3:
-        vec = p3d.LVector3(xcoord, -1, ycoord)
+        vec = (xcoord, -1.0, ycoord)
     elif face_idx == 4:
-        vec = p3d.LVector3(xcoord, ycoord, 1)
+        vec = (xcoord, ycoord, 1.0)
     elif face_idx == 5:
-        vec = p3d.LVector3(-xcoord, ycoord, -1)
+        vec = (-xcoord, ycoord, -1.0)
 
     return vec
 
 
-def calc_sphere_quadrant_area(x, y):
+def calc_sphere_quadrant_area(x: float, y: float) -> float:
     return math.atan2(x*y, math.sqrt(x*x + y*y  + 1))
 
 
-def calc_solid_angle(invdim, x, y):
-    s = ((x + 0.5) * 2 * invdim) - 1
-    t = ((y + 0.5) * 2 * invdim) - 1
+def calc_solid_angle(invdim: float, x: int, y: int) -> float:
+    s = ((float(x) + 0.5) * 2 * invdim) - 1
+    t = ((float(y) + 0.5) * 2 * invdim) - 1
     x0 = s - invdim
     y0 = t - invdim
     x1 = s + invdim
@@ -45,7 +59,7 @@ def calc_solid_angle(invdim, x, y):
         calc_sphere_quadrant_area(x1, y1)
 
 
-def get_sh_basis_from_vector(vec):
+def get_sh_basis_from_vector(vec: Vec3TupleType) -> SHTupleType:
     vecx, vecy, vecz = vec
     return (
         0.282095,
@@ -59,12 +73,12 @@ def get_sh_basis_from_vector(vec):
         0.546274 * (vecx * vecx - vecy * vecy),
     )
 
-def get_sh_coeffs_from_cube_map(texcubemap):
+def get_sh_coeffs_from_cube_map(texcubemap: p3d.Texture) -> list[p3d.LVector3]:
     if texcubemap.z_size != 6:
         raise RuntimeError('supplied texture was not a cube map')
     if texcubemap.x_size != texcubemap.y_size:
         raise RuntimeError('supplied cube map is using unsupported, non-square dimensions')
-    if not texcubemap.might_have_ram_image:
+    if not texcubemap.might_have_ram_image():
         raise RuntimeError('expected might_have_ram_image() to be true on supplied texture')
 
     peeker = texcubemap.peek()
@@ -98,11 +112,11 @@ def get_sh_coeffs_from_cube_map(texcubemap):
 
     for sample in samples:
         # Grab the color value
-        peeker.fetch_pixel(colorptr, *sample[1:], sample[0])
-        color = colorptr.get_xyz()
+        peeker.fetch_pixel(colorptr, sample[1], sample[2], sample[0])
+        color = colorptr.xyz
 
         # Use SA as a weight to better handle corners (box vs sphere)
-        color *= calc_solid_angle(invdim, *sample[1:])
+        color *= calc_solid_angle(invdim, sample[1], sample[2])
 
         # Multiply color by SH basis and add results
         vec = calc_vector(dim, *sample)
@@ -129,7 +143,7 @@ def get_sh_coeffs_from_cube_map(texcubemap):
 
 
 def van_der_corput(idx: int, base: int = 2) -> float:
-    result = 0
+    result = 0.0
     denom = 1
 
     while idx:
@@ -141,16 +155,16 @@ def van_der_corput(idx: int, base: int = 2) -> float:
 
 
 @functools.cache
-def hammersley(idx: int, maxnum: int) -> p3d.LVector2:
-    return p3d.LVector2(idx / maxnum, van_der_corput(idx))
+def hammersley(idx: int, maxnum: int) -> Vec2TupleType:
+    return (idx / maxnum, van_der_corput(idx))
 
 
 @functools.cache
-def importance_sample_ggx(xi: p3d.LVector2, normal: p3d.LVector3, roughness: float) -> p3d.LVector3:
+def importance_sample_ggx(xi: Vec2TupleType, normal: p3d.LVector3, roughness: float) -> p3d.LVector3:
     alpha = roughness * roughness
 
-    phi = 2 * math.pi * xi.x
-    costheta = math.sqrt((1 - xi.y) / (1 + (alpha * alpha - 1) * xi.y))
+    phi = 2 * math.pi * xi[0]
+    costheta = math.sqrt((1 - xi[1]) / (1 + (alpha * alpha - 1) * xi[1]))
     sintheta = math.sqrt(1 - costheta * costheta)
 
     hvec = p3d.LVector3(
@@ -190,7 +204,7 @@ def integrate_brdf(ndotv: float, roughness: float, num_samples: int = 1024) -> p
     normal = p3d.LVector3(0, 0, 1)
     retval = p3d.LVector2(0, 0)
 
-    def calc_sample(idx: int):
+    for idx in range(num_samples):
         xi = hammersley(idx, num_samples)
         hvec = importance_sample_ggx(xi, normal, roughness)
         light = hvec * 2 * view.dot(hvec) - view
@@ -208,7 +222,6 @@ def integrate_brdf(ndotv: float, roughness: float, num_samples: int = 1024) -> p
             retval.x += (1 - fresnel) * geom_vis
             retval.y += fresnel * geom_vis
 
-    _ = [calc_sample(idx) for idx in range(num_samples)]
 
     retval /= num_samples
     return retval
@@ -218,7 +231,7 @@ def gen_brdf_lut(lutsize: int, num_samples: int = 1024) -> p3d.Texture:
     brdflut = p3d.Texture('brdf_lut')
     brdflut.setup_2d_texture(lutsize, lutsize, p3d.Texture.T_float, p3d.Texture.F_rg16)
 
-    handle = brdflut.modify_ram_image()
+    handle = typing.cast(memoryview, brdflut.modify_ram_image())
     pixelsize = brdflut.component_width * brdflut.num_components
     xsize = brdflut.x_size
 
@@ -253,7 +266,14 @@ def filter_sample(pos: p3d.LVector3, envmap: p3d.TexturePeeker, roughness: float
     return retval
 
 
-def filter_env_map(envmap: p3d.Texture, filtered: p3d.Texture, *, size: int = 16, num_mipmaps: int = 4, num_samples: int = 4) -> p3d.Texture:
+def filter_env_map(
+        envmap: p3d.Texture,
+        filtered: p3d.Texture,
+        *,
+        size: int = 16,
+        num_mipmaps: int = 4,
+        num_samples: int = 4
+    ) -> None:
     peeker = envmap.peek()
 
     filtered.setup_cube_map(size, p3d.Texture.T_float, p3d.Texture.F_rgb32)
@@ -276,7 +296,8 @@ def filter_env_map(envmap: p3d.Texture, filtered: p3d.Texture, *, size: int = 16
         for coord in coords:
             face, xcoord, ycoord = coord
             offset = ((face * mipsize + ycoord) * mipsize + xcoord) * pixelsize
-            pos = calc_vector(mipsize, face, xcoord, ycoord)
+            vec = calc_vector(mipsize, face, xcoord, ycoord)
+            pos = p3d.LVector3(vec[0], vec[1], vec[2])
             result = filter_sample(pos, peeker, roughness, num_samples)
-            struct.pack_into('fff', texdata, offset, result[2], result[1], result[0])
+            struct.pack_into('fff', typing.cast(memoryview, texdata), offset, result[2], result[1], result[0])
         filtered.set_ram_mipmap_image(i, texdata)
