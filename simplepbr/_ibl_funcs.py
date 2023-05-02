@@ -86,6 +86,7 @@ def get_sh_coeffs_from_cube_map(texcubemap):
         p3d.LVector3(0, 0, 0),
         p3d.LVector3(0, 0, 0),
     ]
+    colorptr = p3d.LColor()
 
     # SH Basis
     samples = (
@@ -94,11 +95,11 @@ def get_sh_coeffs_from_cube_map(texcubemap):
         for x in range(texcubemap.x_size)
         for y in range(texcubemap.y_size)
     )
+
     for sample in samples:
         # Grab the color value
-        color = p3d.LColor()
-        peeker.fetch_pixel(color, *sample[1:], sample[0])
-        color = color.get_xyz()
+        peeker.fetch_pixel(colorptr, *sample[1:], sample[0])
+        color = colorptr.get_xyz()
 
         # Use SA as a weight to better handle corners (box vs sphere)
         color *= calc_solid_angle(invdim, *sample[1:])
@@ -234,6 +235,7 @@ def filter_sample(pos: p3d.LVector3, envmap: p3d.TexturePeeker, roughness: float
     view = normal = pos.normalized()
     totweight = 0.0
     retval = p3d.LVector3(0.0, 0.0, 0.0)
+    colorptr = p3d.LColor()
 
     for idx in range(num_samples):
         xi = hammersley(idx, num_samples)
@@ -243,9 +245,8 @@ def filter_sample(pos: p3d.LVector3, envmap: p3d.TexturePeeker, roughness: float
 
         ndotl = max(normal.dot(light), 0.0)
         if ndotl > 0.0:
-            color = p3d.LColor()
-            envmap.lookup(color, *pos)
-            retval += color.xyz * ndotl
+            envmap.lookup(colorptr, *pos)
+            retval += colorptr.xyz * ndotl
             totweight += ndotl
 
     retval /= totweight
