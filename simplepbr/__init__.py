@@ -9,12 +9,12 @@ from .version import __version__
 from .envmap import EnvMap
 
 try:
-    from .shaders import shaders
+    from .shaders import shaders # type: ignore
 except ImportError:
     shaders = None
 
 try:
-    from .textures import textures
+    from .textures import textures # type: ignore
 except ImportError:
     textures = None
 

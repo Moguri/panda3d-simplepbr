@@ -1,4 +1,5 @@
 import time
+import typing
 
 import panda3d.core as p3d
 from direct.stdpy import threading
@@ -92,9 +93,9 @@ class EnvMap:
         bfile.open_read(path, True)
 
         reader = bfile.reader
-        cubemap = reader.read_object()
+        cubemap = typing.cast(p3d.Texture, reader.read_object())
         envmap = cls(cubemap, skip_prepare=True)
-        envmap.filtered_env_map = reader.read_object()
+        envmap.filtered_env_map = typing.cast(p3d.Texture, reader.read_object())
         dgram = p3d.Datagram()
         reader.source.get_datagram(dgram)
         scan = p3d.DatagramIterator(dgram)
