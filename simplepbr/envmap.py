@@ -133,6 +133,8 @@ class EnvMap:
             p3d.Texture.T_unsigned_byte,
             p3d.Texture.F_rgb
         )
-        cubemap.set_clear_color(p3d.LColor(1, 1, 1, 1))
+        cubemap.set_clear_color(p3d.LColor(0, 0, 0, 0))
         cubemap.make_ram_image()
-        return cls(cubemap, prefiltered_size=16, prefiltered_samples=1)
+        envmap =  cls(cubemap, skip_prepare=True)
+        envmap.is_prepared.set_result(envmap)
+        return envmap

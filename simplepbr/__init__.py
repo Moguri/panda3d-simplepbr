@@ -250,8 +250,11 @@ class Pipeline:
         self._brdf_lut = _load_texture('brdf_lut.txo')
 
         # Setup env map to be used for irradiance
+        self._empty_env_map = EnvMap.create_empty()
         if env_map is None:
-            env_map = EnvMap.create_empty()
+            env_map = self._empty_env_map
+        if not isinstance(env_map, EnvMap):
+            env_map = EnvPool.ptr().load(env_map)
         self.env_map = env_map
 
         # PBR Shader
@@ -327,7 +330,9 @@ class Pipeline:
             self.tonemap_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
         elif name == 'env_map':
             if value is None:
-                self.env_map = EnvMap.create_empty()
+                self.env_map = self._empty_env_map
+            elif not isinstance(value, EnvMap):
+                self.env_map = EnvPool.ptr().load(value)
             self._recompile_pbr()
 
     def _recompile_pbr(self):
