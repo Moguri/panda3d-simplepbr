@@ -7,6 +7,7 @@ from direct.filter.FilterManager import FilterManager
 
 from .version import __version__
 from .envmap import EnvMap
+from .envpool import EnvPool
 
 try:
     from .shaders import shaders # type: ignore
@@ -25,6 +26,7 @@ __all__ = [
     'init',
     'Pipeline',
     'EnvMap',
+    'EnvPool',
 ]
 
 

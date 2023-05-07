@@ -19,12 +19,18 @@ class EnvMap:
         self.is_prepared = p3d.AsyncFuture()
 
         if not skip_prepare:
-            self._prepare()
+            self.prepare()
 
     def __bool__(self):
         return self.cubemap.name != 'env_map_fallback'
 
-    def _prepare(self):
+
+    @property
+    def hash(self) -> str:
+        name = hash(self.cubemap.fullpath)
+        return f'{name}{self._prefiltered_size}{self._prefiltered_samples}'
+
+    def prepare(self) -> p3d.AsyncFuture:
         def calc_sh():
             starttime = time.perf_counter()
             shcoeffs = iblfuncs.get_sh_coeffs_from_cube_map(self.cubemap)
@@ -67,13 +73,13 @@ class EnvMap:
             future.set_result(self)
         future = p3d.AsyncFuture()
         def donecb(_):
-            self.is_prepared.set_result(True)
+            self.is_prepared.set_result(self)
         future.add_done_callback(donecb)
         thread = threading.Thread(target=wait_threads, args=[future])
         thread.start()
         return future
 
-    def write(self, filepath):
+    def write(self, filepath) -> None:
         bfile = p3d.BamFile()
         bfile.open_write(filepath)
         bfile.writer.set_file_texture_mode(p3d.BamWriter.BTM_rawdata)
@@ -88,7 +94,7 @@ class EnvMap:
         bfile.writer.target.put_datagram(shcoeffs_data)
 
     @classmethod
-    def _from_bam(cls, path: p3d.Filename):
+    def _from_bam(cls, path: p3d.Filename) -> 'EnvMap':
         bfile = p3d.BamFile()
         bfile.open_read(path, True)
 
@@ -105,10 +111,11 @@ class EnvMap:
                 scan.get_stdfloat(),
                 scan.get_stdfloat()
             )
+        envmap.is_prepared.set_result(envmap)
         return envmap
 
     @classmethod
-    def from_file_path(cls, path):
+    def from_file_path(cls, path, skip_prepare=False) -> 'EnvMap':
         if not isinstance(path, p3d.Filename):
             path = p3d.Filename.from_os_specific(path)
 
@@ -116,10 +123,10 @@ class EnvMap:
             return cls._from_bam(path)
 
         cubemap = p3d.TexturePool.load_cube_map(path)
-        return cls(cubemap)
+        return cls(cubemap, skip_prepare=skip_prepare)
 
     @classmethod
-    def create_empty(cls):
+    def create_empty(cls) -> 'EnvMap':
         cubemap = p3d.Texture('env_map_fallback')
         cubemap.setup_cube_map(
             2,
