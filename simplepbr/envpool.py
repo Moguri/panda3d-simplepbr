@@ -3,6 +3,7 @@ import typing
 import panda3d.core as p3d
 
 from .envmap import EnvMap
+from .logging import logger
 
 PathLikeType = typing.Union[str, p3d.Filename]
 
@@ -27,6 +28,7 @@ class EnvPool:
             filepath = p3d.Filename.from_os_specific(filepath)
 
         if filepath in self._envmaps:
+            logger.info(f'EnvPool: loaded {filepath} from RAM cache')
             return self._envmaps[filepath]
 
         if filepath.get_extension() == 'env':
@@ -38,6 +40,7 @@ class EnvPool:
         cache_file = self._get_cache_path(envmap)
 
         if cache_file.exists():
+            logger.info(f'EnvPool: loaded {filepath} from disk cache')
             envmap = EnvMap.from_file_path(cache_file)
         else:
             envmap.prepare()

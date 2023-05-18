@@ -4,6 +4,7 @@ import typing
 import panda3d.core as p3d
 from direct.stdpy import threading
 
+from .logging import logger
 from . import _ibl_funcs as iblfuncs
 
 
@@ -38,7 +39,7 @@ class EnvMap:
                 self.sh_coefficients[idx] = val
 
             tottime = (time.perf_counter() - starttime) * 1000
-            print(
+            logger.info(
                 f'Spherical harmonics coefficients for {self.cubemap.name} calculated in {tottime:.3f}ms'
             )
 
@@ -52,7 +53,7 @@ class EnvMap:
             )
 
             tottime = (time.perf_counter() - starttime) * 1000
-            print(
+            logger.info(
                 f'Pre-filtered environment map for {self.cubemap.name} calculated in {tottime:.3f}ms'
             )
 
