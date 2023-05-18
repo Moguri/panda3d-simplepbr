@@ -8,6 +8,10 @@
 
 #ifdef USE_330
     #define texture2D texture
+    #define textureCube texture
+    #define textureCubeLod textureLod
+#else
+    #extension GL_ARB_shader_texture_lod : require
 #endif
 
 uniform struct p3d_MaterialParameters {
@@ -44,6 +48,8 @@ uniform struct p3d_FogParameters {
 uniform vec4 p3d_ColorScale;
 uniform vec4 p3d_TexAlphaOnly;
 
+uniform vec3 sh_coeffs[9];
+
 struct FunctionParamters {
     float n_dot_l;
     float n_dot_v;
@@ -62,6 +68,9 @@ uniform sampler2D p3d_TextureMetalRoughness;
 uniform sampler2D p3d_TextureNormal;
 uniform sampler2D p3d_TextureEmission;
 
+uniform sampler2D brdf_lut;
+uniform samplerCube filtered_env_map;
+
 const vec3 F0 = vec3(0.04);
 const float PI = 3.141592653589793;
 const float SPOTSMOOTH = 0.001;
@@ -71,6 +80,7 @@ varying vec3 v_position;
 varying vec4 v_color;
 varying vec2 v_texcoord;
 varying mat3 v_tbn;
+varying mat3 v_world_tbn;
 #ifdef ENABLE_SHADOWS
 varying vec4 v_shadow_pos[MAX_LIGHTS];
 #endif
@@ -79,11 +89,17 @@ varying vec4 v_shadow_pos[MAX_LIGHTS];
 out vec4 o_color;
 #endif
 
+const float MAX_REFLECTION_LOD = 4.0f;
+
 // Schlick's Fresnel approximation with Spherical Gaussian approximation to replace the power
 vec3 specular_reflection(FunctionParamters func_params) {
     vec3 f0 = func_params.reflection0;
     float v_dot_h= func_params.v_dot_h;
     return f0 + (vec3(1.0) - f0) * pow(2.0, (-5.55473 * v_dot_h - 6.98316) * v_dot_h);
+}
+
+vec3 fresnelSchlickRoughness(float u, vec3 f0, float roughness) {
+    return f0 + (max(vec3(1.0 - roughness), f0) - f0) * pow(clamp(1.0 - u, 0.0, 1.0), 5.0);
 }
 
 // Smith GGX with optional fast sqrt approximation (see https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg))
@@ -111,8 +127,21 @@ float microfacet_distribution(FunctionParamters func_params) {
 }
 
 // Lambert
-float diffuse_function(FunctionParamters func_params) {
+float diffuse_function() {
     return 1.0 / PI;
+}
+
+vec3 irradiance_from_sh(vec3 normal) {
+    return
+        + sh_coeffs[0] * 0.282095
+        + sh_coeffs[1] * 0.488603 * normal.x
+        + sh_coeffs[2] * 0.488603 * normal.z
+        + sh_coeffs[3] * 0.488603 * normal.y
+        + sh_coeffs[4] * 1.092548 * normal.x * normal.z
+        + sh_coeffs[5] * 1.092548 * normal.y * normal.z
+        + sh_coeffs[6] * 1.092548 * normal.y * normal.x
+        + sh_coeffs[7] * (0.946176 * normal.z * normal.z - 0.315392)
+        + sh_coeffs[8] * 0.546274 * (normal.x * normal.x - normal.y * normal.y);
 }
 
 void main() {
@@ -124,11 +153,15 @@ void main() {
     vec3 diffuse_color = (base_color.rgb * (vec3(1.0) - F0)) * (1.0 - metallic);
     vec3 spec_color = mix(F0, base_color.rgb, metallic);
 #ifdef USE_NORMAL_MAP
-    vec3 n = normalize(v_tbn * (2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0));
+    vec3 normalmap = 2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0;
+    vec3 n = normalize(v_tbn * normalmap);
+    vec3 world_normal = normalize(v_world_tbn * normalmap);
 #else
     vec3 n = normalize(v_tbn[2]);
+    vec3 world_normal = normalize(v_world_tbn[2]);
 #endif
     vec3 v = normalize(-v_position);
+    vec3 r = reflect(-v, n);
 
 #ifdef USE_OCCLUSION_MAP
     float ambient_occlusion = metal_rough.r;
@@ -143,6 +176,8 @@ void main() {
 #endif
 
     vec4 color = vec4(vec3(0.0), base_color.a) + p3d_TexAlphaOnly;
+
+    float n_dot_v = clamp(abs(dot(n, v)), 0.0, 1.0);
 
     for (int i = 0; i < p3d_LightSource.length(); ++i) {
         vec3 lightcol = p3d_LightSource[i].diffuse.rgb;
@@ -173,7 +208,7 @@ void main() {
 
         FunctionParamters func_params;
         func_params.n_dot_l = clamp(dot(n, l), 0.0, 1.0);
-        func_params.n_dot_v = clamp(abs(dot(n, v)), 0.0, 1.0);
+        func_params.n_dot_v = n_dot_v;
         func_params.n_dot_h = clamp(dot(n, h), 0.0, 1.0);
         func_params.l_dot_h = clamp(dot(l, h), 0.0, 1.0);
         func_params.v_dot_h = clamp(dot(v, h), 0.0, 1.0);
@@ -187,13 +222,27 @@ void main() {
         float V = visibility_occlusion(func_params); // V = G / (4 * n_dot_l * n_dot_v)
         float D = microfacet_distribution(func_params);
 
-        vec3 diffuse_contrib = diffuse_color * diffuse_function(func_params);
+        vec3 diffuse_contrib = diffuse_color * diffuse_function();
         vec3 spec_contrib = vec3(F * V * D);
         color.rgb += func_params.n_dot_l * lightcol * (diffuse_contrib + spec_contrib) * shadow;
     }
 
+
+    // Indirect diffuse + specular (IBL)
+    vec3 ibl_f = fresnelSchlickRoughness(n_dot_v, F0, perceptual_roughness);
+    vec3 ibl_diff = base_color.rgb * max(irradiance_from_sh(world_normal), 0.0) * diffuse_function();
+
+    vec2 env_brdf = texture2D(brdf_lut, vec2(n_dot_v, perceptual_roughness)).rg;
+    vec3 ibl_spec_color = textureCubeLod(filtered_env_map, r, perceptual_roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 ibl_spec = ibl_spec_color * (ibl_f * env_brdf.x + env_brdf.y);
+    color.rgb += ((1.0 - ibl_f) * ibl_diff  + ibl_spec) * ambient_occlusion;
+
+    // Indirect diffuse (ambient light)
     color.rgb += diffuse_color * p3d_LightModel.ambient.rgb * ambient_occlusion;
+
+    // Emission
     color.rgb += emission;
+
 
 #ifdef ENABLE_FOG
     // Exponential fog

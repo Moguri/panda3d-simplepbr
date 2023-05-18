@@ -19,13 +19,13 @@ The PBR shader is heavily inspired by the [Khronos glTF Sample Viewer](https://g
 * Occlusion maps
 * Basic shadow mapping for DirectionalLight and Spotlight
 * Post-tonemapping color transform via a lookup table (LUT) texture
+* IBL Diffuse
+* IBL Specular
 
 ## Notable Todos
 There are a few big things still missing and are planned to be implemented:
 
 * Shadow mapping for PointLight
-* IBL Diffuse
-* IBL Specular
 
 ## Other missing features
 The goal is to keep this simple and lightweight.

@@ -6,11 +6,18 @@ import panda3d.core as p3d
 from direct.filter.FilterManager import FilterManager
 
 from .version import __version__
+from .envmap import EnvMap
+from .envpool import EnvPool
 
 try:
-    from .shaders import shaders
+    from .shaders import shaders # type: ignore
 except ImportError:
     shaders = None
+
+try:
+    from .textures import textures # type: ignore
+except ImportError:
+    textures = None
 
 
 __all__ = [
@@ -18,6 +25,8 @@ __all__ = [
     'sdr_lut_screenshot',
     'init',
     'Pipeline',
+    'EnvMap',
+    'EnvPool',
 ]
 
 
@@ -117,6 +126,24 @@ def _add_shader_defines(shaderstr, defines):
     )
 
 
+def _load_texture(texturepath):
+    texturedir = p3d.Filename.from_os_specific(
+        os.path.join(
+            os.path.dirname(__file__),
+            'textures'
+        )
+    )
+    if textures:
+        texture = p3d.Texture.make_from_txo(
+            p3d.StringStream(textures[texturepath]),
+            (texturedir / texturepath).get_fullpath()
+        )
+    else:
+        texture = p3d.TexturePool.load_texture(texturedir / texturepath)
+
+    return texture
+
+
 def _load_shader_str(shaderpath, defines=None):
     if shaders:
         shaderstr = shaders[shaderpath]
@@ -179,6 +206,7 @@ class Pipeline:
             use_hardware_skinning=None,
             sdr_lut=None,
             sdr_lut_factor=1.0,
+            env_map=None,
     ):
         if render_node is None:
             render_node = base.render
@@ -218,6 +246,16 @@ class Pipeline:
 
         # Make sure we have AA for if/when MSAA is enabled
         self.render_node.set_antialias(p3d.AntialiasAttrib.M_auto)
+
+        self._brdf_lut = _load_texture('brdf_lut.txo')
+
+        # Setup env map to be used for irradiance
+        self._empty_env_map = EnvMap.create_empty()
+        if env_map is None:
+            env_map = self._empty_env_map
+        if not isinstance(env_map, EnvMap):
+            env_map = EnvPool.ptr().load(env_map)
+        self.env_map = env_map
 
         # PBR Shader
         self._recompile_pbr()
@@ -290,6 +328,12 @@ class Pipeline:
             resetup_tonemap()
         elif name == 'sdr_lut_factor' and self.sdr_lut:
             self.tonemap_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
+        elif name == 'env_map':
+            if value is None:
+                self.env_map = self._empty_env_map
+            elif not isinstance(value, EnvMap):
+                self.env_map = EnvPool.ptr().load(value)
+            self._recompile_pbr()
 
     def _recompile_pbr(self):
         pbr_defines = {
@@ -320,6 +364,9 @@ class Pipeline:
         if self.enable_hardware_skinning:
             attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
         self.render_node.set_attrib(attr)
+        self.render_node.set_shader_input('sh_coeffs', self.env_map.sh_coefficients)
+        self.render_node.set_shader_input('brdf_lut', self._brdf_lut)
+        self.render_node.set_shader_input('filtered_env_map', self.env_map.filtered_env_map)
 
     def _setup_tonemapping(self):
         if self._shader_ready:
@@ -455,6 +502,8 @@ def init(**kwargs):
     :type sdr_lut: `p3d.Texture`
     :param sdr_lut_factor: Factor (from 0.0 to 1.0) for how much of the LUT color to mix in, defaults to 1.0
     :type sdr_lut_factor: float
+    :param env_map: An environment map to use for indirect lighting (image-based lighting)
+    :type env_map: `panda3d.core.Texture` (must be a cube map)
     '''
 
     return Pipeline(**kwargs)
