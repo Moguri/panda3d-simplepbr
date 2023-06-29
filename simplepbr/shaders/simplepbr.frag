@@ -105,18 +105,22 @@ vec3 fresnelSchlickRoughness(float u, vec3 f0, float roughness) {
 // Smith GGX with optional fast sqrt approximation (see https://google.github.io/filament/Filament.md.html#materialsystem/specularbrdf/geometricshadowing(specularg))
 float visibility_occlusion(FunctionParamters func_params) {
     float r = func_params.roughness;
-    float r2 = r * r;
     float n_dot_l = func_params.n_dot_l;
     float n_dot_v = func_params.n_dot_v;
 #ifdef SMITH_SQRT_APPROX
     float ggxv = n_dot_l * (n_dot_v * (1.0 - r) + r);
     float ggxl = n_dot_v * (n_dot_l * (1.0 - r) + r);
 #else
+    float r2 = r * r;
     float ggxv = n_dot_l * sqrt(n_dot_v * n_dot_v * (1.0 - r2) + r2);
     float ggxl = n_dot_v * sqrt(n_dot_l * n_dot_l * (1.0 - r2) + r2);
 #endif
 
-    return max(0.0, 0.5 / (ggxv + ggxl));
+    float ggx = ggxv + ggxl;
+    if (ggx > 0.0) {
+        return 0.5 / ggx;
+    }
+    return 0.0;
 }
 
 // GGX/Trowbridge-Reitz
