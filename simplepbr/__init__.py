@@ -366,7 +366,9 @@ class Pipeline:
         self.render_node.set_attrib(attr)
         self.render_node.set_shader_input('sh_coeffs', self.env_map.sh_coefficients)
         self.render_node.set_shader_input('brdf_lut', self._brdf_lut)
-        self.render_node.set_shader_input('filtered_env_map', self.env_map.filtered_env_map)
+        filtered_env_map = self.env_map.filtered_env_map
+        self.render_node.set_shader_input('filtered_env_map', filtered_env_map)
+        self.render_node.set_shader_input('max_reflection_lod', filtered_env_map.num_loadable_ram_mipmap_images)
 
     def _setup_tonemapping(self):
         if self._shader_ready:

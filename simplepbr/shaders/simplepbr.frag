@@ -70,6 +70,7 @@ uniform sampler2D p3d_TextureEmission;
 
 uniform sampler2D brdf_lut;
 uniform samplerCube filtered_env_map;
+uniform float max_reflection_lod;
 
 const vec3 F0 = vec3(0.04);
 const float PI = 3.141592653589793;
@@ -89,7 +90,6 @@ varying vec4 v_shadow_pos[MAX_LIGHTS];
 out vec4 o_color;
 #endif
 
-const float MAX_REFLECTION_LOD = 4.0f;
 
 // Schlick's Fresnel approximation with Spherical Gaussian approximation to replace the power
 vec3 specular_reflection(FunctionParamters func_params) {
@@ -237,7 +237,7 @@ void main() {
     vec3 ibl_diff = base_color.rgb * max(irradiance_from_sh(world_normal), 0.0) * diffuse_function();
 
     vec2 env_brdf = texture2D(brdf_lut, vec2(n_dot_v, perceptual_roughness)).rg;
-    vec3 ibl_spec_color = textureCubeLod(filtered_env_map, r, perceptual_roughness * MAX_REFLECTION_LOD).rgb;
+    vec3 ibl_spec_color = textureCubeLod(filtered_env_map, r, perceptual_roughness * max_reflection_lod).rgb;
     vec3 ibl_spec = ibl_spec_color * (ibl_f * env_brdf.x + env_brdf.y);
     color.rgb += ((1.0 - ibl_f) * ibl_diff  + ibl_spec) * ambient_occlusion;
 
