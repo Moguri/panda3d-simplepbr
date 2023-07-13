@@ -1,9 +1,20 @@
+from dataclasses import dataclass, field, InitVar
+import builtins
 import math
 import os
+from typing_extensions import (
+    Any,
+    ClassVar,
+    Literal,
+    Optional,
+    Union,
+)
 
 import panda3d.core as p3d
 
+from direct.showbase.ShowBase import ShowBase
 from direct.filter.FilterManager import FilterManager
+from direct.task.Task import TaskManager
 
 from .version import __version__
 from .envmap import EnvMap
@@ -186,60 +197,75 @@ def _make_shader(name, vertex, fragment, defines):
     return shader
 
 
+def _get_showbase_attr(attr: str) -> Any:
+    showbase: ShowBase = builtins.base # type: ignore[attr-defined]
+    return getattr(showbase, attr)
+
+
+def _get_default_330():
+    cvar = p3d.ConfigVariableInt('gl-version')
+    gl_version = [
+        cvar.get_word(i)
+        for i in range(cvar.get_num_words())
+    ]
+    if len(gl_version) >= 2 and gl_version[0] >= 3 and gl_version[1] >= 2:
+        # Not exactly accurate, but setting this variable to '3 2' is common for disabling
+        # the fixed-function pipeline and 3.2 support likely means 3.3 support as well.
+        return True
+
+    return False
+
+@dataclass(kw_only=True)
 class Pipeline:
-    def __init__(
-            self,
-            *,
-            render_node=None,
-            window=None,
-            camera_node=None,
-            taskmgr=None,
-            msaa_samples=4,
-            max_lights=8,
-            use_normal_maps=False,
-            use_emission_maps=True,
-            exposure=1.0,
-            enable_shadows=False,
-            enable_fog=False,
-            use_occlusion_maps=False,
-            use_330=None,
-            use_hardware_skinning=None,
-            sdr_lut=None,
-            sdr_lut_factor=1.0,
-            env_map=None,
-    ):
-        if render_node is None:
-            render_node = base.render
+    # Class variables
+    _EMPTY_ENV_MAP: ClassVar[EnvMap] = EnvMap.create_empty()
+    _BRDF_LUT: ClassVar[p3d.Texture] = _load_texture('brdf_lut.txo')
+    _PBR_VARS = [
+        'enable_fog',
+        'enable_hardware_skinning',
+        'enable_shadows',
+        'max_lights',
+        'use_emission_maps',
+        'use_normal_maps',
+        'use_occlusion_maps',
+    ]
+    _POST_PROC_VARS = [
+        'camera_node',
+        'msaa_samples',
+        'sdr_lut',
+        'window',
+    ]
 
-        if window is None:
-            window = base.win
+    # Public instance variables
+    render_node: p3d.NodePath = field(default_factory=lambda: _get_showbase_attr('render'))
+    window: p3d.GraphicsOutput = field(default_factory=lambda: _get_showbase_attr('win'))
+    camera_node: p3d.NodePath = field(default_factory=lambda: _get_showbase_attr('cam'))
+    taskmgr: TaskManager = field(default_factory=lambda: _get_showbase_attr('task_mgr'))
+    msaa_samples: Literal[0, 2, 4, 8, 16] = 4
+    max_lights: int = 8
+    use_normal_maps: bool = False
+    use_emission_maps: bool = True
+    use_occlusion_maps: bool = False
+    exposure: float = 1.0
+    enable_shadows: bool = False
+    enable_fog: bool  = False
+    use_330: bool = field(default_factory=_get_default_330)
+    use_hardware_skinning: InitVar[Union[bool, None]] = None
+    enable_hardware_skinning: bool = True
+    sdr_lut: Optional[p3d.Texture] = None
+    sdr_lut_factor: float = 1.0
+    env_map: Union[EnvMap, str, None] = None
 
-        if camera_node is None:
-            camera_node = base.cam
+    # Private instance variables
+    _shader_ready: bool = False
+    _filtermgr: FilterManager = field(init=False)
+    _post_process_quad: p3d.NodePath = field(init=False)
 
-        if taskmgr is None:
-            taskmgr = base.task_mgr
-
+    def __post_init__(self, use_hardware_skinning):
         self._shader_ready = False
-        self.render_node = render_node
-        self.window = window
-        self.camera_node = camera_node
-        self.max_lights = max_lights
-        self.use_normal_maps = use_normal_maps
-        self.use_emission_maps = use_emission_maps
-        self.enable_shadows = enable_shadows
-        self.enable_fog = enable_fog
-        self.exposure = exposure
-        self.msaa_samples = msaa_samples
-        self.use_occlusion_maps = use_occlusion_maps
-        self.sdr_lut = sdr_lut
-        self.sdr_lut_factor = sdr_lut_factor
-
-        self._set_use_330(use_330)
-        self.enable_hardware_skinning = use_hardware_skinning if use_hardware_skinning is not None else self.use_330
 
         # Create a FilterManager instance
-        self.manager = FilterManager(window, camera_node)
+        self._filtermgr = FilterManager(self.window, self.camera_node)
 
         # Do not force power-of-two textures
         p3d.Texture.set_textures_power_2(p3d.ATS_none)
@@ -247,93 +273,55 @@ class Pipeline:
         # Make sure we have AA for if/when MSAA is enabled
         self.render_node.set_antialias(p3d.AntialiasAttrib.M_auto)
 
-        self._brdf_lut = _load_texture('brdf_lut.txo')
-
         # Setup env map to be used for irradiance
-        self._empty_env_map = EnvMap.create_empty()
-        if env_map is None:
-            env_map = self._empty_env_map
-        if not isinstance(env_map, EnvMap):
-            env_map = EnvPool.ptr().load(env_map)
-        self.env_map = env_map
+        if self.env_map is None:
+            self.env_map = self._EMPTY_ENV_MAP
+        if not isinstance(self.env_map, EnvMap):
+            self.env_map = EnvPool.ptr().load(self.env_map)
 
         # PBR Shader
+        self.enable_hardware_skinning = use_hardware_skinning if use_hardware_skinning is not None else self.use_330
         self._recompile_pbr()
 
         # Tonemapping
         self._setup_tonemapping()
 
         # Do updates based on scene changes
-        taskmgr.add(self._update, 'simplepbr update')
+        self.taskmgr.add(self._update, 'simplepbr update')
 
         self._shader_ready = True
 
-    def _set_use_330(self, use_330):
-        if use_330 is not None:
-            self.use_330 = use_330
-        else:
-            self.use_330 = False
-
-            cvar = p3d.ConfigVariableInt('gl-version')
-            gl_version = [
-                cvar.get_word(i)
-                for i in range(cvar.get_num_words())
-            ]
-            if len(gl_version) >= 2 and gl_version[0] >= 3 and gl_version[1] >= 2:
-                # Not exactly accurate, but setting this variable to '3 2' is common for disabling
-                # the fixed-function pipeline and 3.2 support likely means 3.3 support as well.
-                self.use_330 = True
-
 
     def __setattr__(self, name, value):
-        if hasattr(self, name):
-            prev_value = getattr(self, name)
-        else:
-            prev_value = None
+        prev_value = getattr(self, name, None)
         super().__setattr__(name, value)
+
         if not self._shader_ready:
             return
 
-        pbr_vars = [
-            'max_lights',
-            'use_normal_maps',
-            'use_emission_maps',
-            'enable_shadows',
-            'enable_fog',
-            'use_occlusion_maps',
-        ]
         def resetup_tonemap():
             # Destroy previous buffers so we can re-create
-            self.manager.cleanup()
+            self._filtermgr.cleanup()
 
             # Create a new FilterManager instance
-            self.manager = FilterManager(self.window, self.camera_node)
+            self._filtermgr = FilterManager(self.window, self.camera_node)
             self._setup_tonemapping()
 
-        if name in pbr_vars and prev_value != value:
-            self._recompile_pbr()
-        elif name == 'exposure':
-            self.tonemap_quad.set_shader_input('exposure', self.exposure)
-        elif name == 'msaa_samples':
-            self._setup_tonemapping()
-        elif name == 'render_node' and prev_value != value:
-            self._recompile_pbr()
-        elif name in ('camera_node', 'window') and prev_value != value:
-            resetup_tonemap()
-        elif name == 'use_330' and prev_value != value:
-            self._set_use_330(value)
-            self._recompile_pbr()
-            resetup_tonemap()
-        elif name == 'sdr_lut' and prev_value != value:
-            resetup_tonemap()
-        elif name == 'sdr_lut_factor' and self.sdr_lut:
-            self.tonemap_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
+        if name == 'exposure':
+            self._post_process_quad.set_shader_input('exposure', self.exposure)
+        elif name == 'sdr_lut_factor':
+            self._post_process_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
         elif name == 'env_map':
             if value is None:
-                self.env_map = self._empty_env_map
+                self.env_map = self._EMPTY_ENV_MAP
             elif not isinstance(value, EnvMap):
                 self.env_map = EnvPool.ptr().load(value)
+
+        if name in self._PBR_VARS and prev_value != value:
             self._recompile_pbr()
+
+        if name in self._POST_PROC_VARS and prev_value != value:
+            resetup_tonemap()
 
     def _recompile_pbr(self):
         pbr_defines = {
@@ -365,7 +353,7 @@ class Pipeline:
             attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
         self.render_node.set_attrib(attr)
         self.render_node.set_shader_input('sh_coeffs', self.env_map.sh_coefficients)
-        self.render_node.set_shader_input('brdf_lut', self._brdf_lut)
+        self.render_node.set_shader_input('brdf_lut', self._BRDF_LUT)
         filtered_env_map = self.env_map.filtered_env_map
         self.render_node.set_shader_input('filtered_env_map', filtered_env_map)
         self.render_node.set_shader_input('max_reflection_lod', filtered_env_map.num_loadable_ram_mipmap_images)
@@ -373,7 +361,7 @@ class Pipeline:
     def _setup_tonemapping(self):
         if self._shader_ready:
             # Destroy previous buffers so we can re-create
-            self.manager.cleanup()
+            self._filtermgr.cleanup()
 
             # Fix shadow buffers after FilterManager.cleanup()
             for caster in self.get_all_casters():
@@ -390,7 +378,7 @@ class Pipeline:
         scene_tex = p3d.Texture()
         scene_tex.set_format(p3d.Texture.F_rgba16)
         scene_tex.set_component_type(p3d.Texture.T_float)
-        self.tonemap_quad = self.manager.render_scene_into(colortex=scene_tex, fbprops=fbprops)
+        self._post_process_quad = self._filtermgr.render_scene_into(colortex=scene_tex, fbprops=fbprops)
 
         defines = {}
         if self.use_330:
@@ -404,12 +392,12 @@ class Pipeline:
             'tonemap.frag',
             defines
         )
-        self.tonemap_quad.set_shader(tonemap_shader)
-        self.tonemap_quad.set_shader_input('tex', scene_tex)
-        self.tonemap_quad.set_shader_input('exposure', self.exposure)
+        self._post_process_quad.set_shader(tonemap_shader)
+        self._post_process_quad.set_shader_input('tex', scene_tex)
+        self._post_process_quad.set_shader_input('exposure', self.exposure)
         if self.sdr_lut:
-            self.tonemap_quad.set_shader_input('sdr_lut', self.sdr_lut)
-            self.tonemap_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
+            self._post_process_quad.set_shader_input('sdr_lut', self.sdr_lut)
+            self._post_process_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
 
     def get_all_casters(self):
         engine = p3d.GraphicsEngine.get_global_ptr()
@@ -464,48 +452,10 @@ class Pipeline:
             assert not shader.get_error_flag()
 
         check_shader(self.render_node.get_shader())
-        check_shader(self.tonemap_quad.get_shader())
+        check_shader(self._post_process_quad.get_shader())
 
         attr = self._create_shadow_shader_attrib()
         check_shader(attr.get_shader())
 
 
-def init(**kwargs):
-    '''Initialize the PBR render pipeline
-    :param render_node: The node to attach the shader too, defaults to `base.render` if `None`
-    :type render_node: `p3d.NodePath`
-    :param window: The window to attach the framebuffer too, defaults to `base.win` if `None`
-    :type window: `p3d.GraphicsOutput
-    :param camera_node: The NodePath of the camera to use when rendering the scene, defaults to `base.cam` if `None`
-    :type camera_node: `p3d.NodePath
-    :param msaa_samples: The number of samples to use for multisample anti-aliasing, defaults to 4
-    :type msaa_samples: int
-    :param max_lights: The maximum number of lights to render, defaults to 8
-    :type max_lights: int
-    :param use_normal_maps: Use normal maps, defaults to `False` (NOTE: Requires models with appropriate tangents)
-    :type use_normal_maps: bool
-    :param use_emission_maps: Use emission maps, defaults to `True`
-    :type use_emission_maps: bool
-    :param exposure: a value used to multiply the screen-space color value prior to tonemapping, defaults to 1.0
-    :type exposure: float
-    :param enable_shadows: Enable shadow map support (breaks with point lights), defaults to False
-    :type enable_shadows: bool
-    :param enable_fog: Enable exponential fog, defaults to False
-    :type enable_fog: bool
-    :param use_occlusion_maps: Use occlusion maps, defaults to `False` (NOTE: Requires occlusion channel in
-    metal-roughness map)
-    :type use_occlusion_maps: bool
-    :param use_330: Force the usage of GLSL 330 shaders (version 120 otherwise, auto-detect if None)
-    :type use_330: bool or None
-    :param use_hardware_skinning: Force usage of hardware skinning for skeleton animations
-        (auto-detect if None, defaults to None)
-    :type use_hardware_skinning: bool or None
-    :param sdr_lut: Color LUT to use post-tonemapping
-    :type sdr_lut: `p3d.Texture`
-    :param sdr_lut_factor: Factor (from 0.0 to 1.0) for how much of the LUT color to mix in, defaults to 1.0
-    :type sdr_lut_factor: float
-    :param env_map: An environment map to use for indirect lighting (image-based lighting)
-    :type env_map: `panda3d.core.Texture` (must be a cube map)
-    '''
-
-    return Pipeline(**kwargs)
+init = Pipeline
