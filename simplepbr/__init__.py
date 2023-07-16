@@ -125,8 +125,9 @@ def _add_shader_defines(shaderstr, defines):
 
 
     define_lines = [
-        f'#define {define} {value}'
+        f'#define {define} {value if value is not True else ""}'
         for define, value in defines.items()
+        if value
     ]
 
     return '\n'.join(
@@ -326,21 +327,14 @@ class Pipeline:
     def _recompile_pbr(self):
         pbr_defines = {
             'MAX_LIGHTS': self.max_lights,
+            'USE_NORMAL_MAP': self.use_normal_maps,
+            'USE_EMISSION_MAP': self.use_emission_maps,
+            'ENABLE_SHADOWS': self.enable_shadows,
+            'ENABLE_FOG': self.enable_fog,
+            'USE_OCCLUSION_MAP': self.use_occlusion_maps,
+            'USE_330': self.use_330,
+            'ENABLE_SKINNING': self.enable_hardware_skinning,
         }
-        if self.use_normal_maps:
-            pbr_defines['USE_NORMAL_MAP'] = ''
-        if self.use_emission_maps:
-            pbr_defines['USE_EMISSION_MAP'] = ''
-        if self.enable_shadows:
-            pbr_defines['ENABLE_SHADOWS'] = ''
-        if self.enable_fog:
-            pbr_defines['ENABLE_FOG'] = ''
-        if self.use_occlusion_maps:
-            pbr_defines['USE_OCCLUSION_MAP'] = ''
-        if self.use_330:
-            pbr_defines['USE_330'] = ''
-        if self.enable_hardware_skinning:
-            pbr_defines['ENABLE_SKINNING'] = ''
 
         pbrshader = _make_shader(
             'pbr',
@@ -380,11 +374,10 @@ class Pipeline:
         scene_tex.set_component_type(p3d.Texture.T_float)
         self._post_process_quad = self._filtermgr.render_scene_into(colortex=scene_tex, fbprops=fbprops)
 
-        defines = {}
-        if self.use_330:
-            defines['USE_330'] = ''
-        if self.sdr_lut:
-            defines['USE_SDR_LUT'] = ''
+        defines = {
+            'USE_330': self.use_330,
+            'USE_SDR_LUT': bool(self.sdr_lut),
+        }
 
         tonemap_shader = _make_shader(
             'tonemap',
@@ -414,11 +407,10 @@ class Pipeline:
         ]
 
     def _create_shadow_shader_attrib(self):
-        defines = {}
-        if self.use_330:
-            defines['USE_330'] = ''
-        if self.enable_hardware_skinning:
-            defines['ENABLE_SKINNING'] = ''
+        defines = {
+            'USE_330': self.use_330,
+            'ENABLE_SKINNING': self.enable_hardware_skinning,
+        }
         shader = _make_shader(
             'shadow',
             'shadow.vert',
