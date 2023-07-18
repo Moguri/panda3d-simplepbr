@@ -1,5 +1,9 @@
 import time
 import typing
+from typing_extensions import (
+    Any,
+    Self,
+)
 
 import panda3d.core as p3d
 from direct.stdpy import threading
@@ -9,7 +13,7 @@ from . import _ibl_funcs as iblfuncs
 
 
 class EnvMap:
-    def __init__(self, cubemap: p3d.Texture, *, prefiltered_size=64, prefiltered_samples=16, skip_prepare=False):
+    def __init__(self, cubemap: p3d.Texture, *, prefiltered_size: int=64, prefiltered_samples: int=16, skip_prepare: bool=False) -> None:
         self.cubemap: p3d.Texture = cubemap
         self.sh_coefficients: p3d.PTA_LVecBase3f = p3d.PTA_LVecBase3f.empty_array(9)
         self.filtered_env_map = p3d.Texture('filtered_env_map')
@@ -22,7 +26,7 @@ class EnvMap:
         if not skip_prepare:
             self.prepare()
 
-    def __bool__(self):
+    def __bool__(self) -> bool:
         return self.cubemap.name != 'env_map_fallback'
 
 
@@ -32,7 +36,7 @@ class EnvMap:
         return f'{name}{self._prefiltered_size}{self._prefiltered_samples}'
 
     def prepare(self) -> p3d.AsyncFuture:
-        def calc_sh():
+        def calc_sh() -> None:
             starttime = time.perf_counter()
             shcoeffs = iblfuncs.get_sh_coeffs_from_cube_map(self.cubemap)
             for idx, val in enumerate(shcoeffs):
@@ -43,7 +47,7 @@ class EnvMap:
                 f'Spherical harmonics coefficients for {self.cubemap.name} calculated in {tottime:.3f}ms'
             )
 
-        def filter_env_map():
+        def filter_env_map() -> None:
             starttime = time.perf_counter()
             iblfuncs.filter_env_map(
                 self.cubemap,
@@ -68,19 +72,19 @@ class EnvMap:
             threads.append(thread)
             thread.start()
 
-        def wait_threads(future):
+        def wait_threads(future: p3d.AsyncFuture) -> None:
             for thread in threads:
                 thread.join()
             future.set_result(self)
         future = p3d.AsyncFuture()
-        def donecb(_):
+        def donecb(_: p3d.AsyncFuture) -> None:
             self.is_prepared.set_result(self)
         future.add_done_callback(donecb)
         thread = threading.Thread(target=wait_threads, args=[future])
         thread.start()
         return future
 
-    def write(self, filepath) -> None:
+    def write(self, filepath: p3d.Filename) -> None:
         bfile = p3d.BamFile()
         bfile.open_write(filepath)
         bfile.writer.set_file_texture_mode(p3d.BamWriter.BTM_rawdata)
@@ -95,7 +99,7 @@ class EnvMap:
         bfile.writer.target.put_datagram(shcoeffs_data)
 
     @classmethod
-    def _from_bam(cls, path: p3d.Filename) -> 'EnvMap':
+    def _from_bam(cls, path: p3d.Filename) -> Self:
         bfile = p3d.BamFile()
         bfile.open_read(path, True)
 
@@ -116,7 +120,7 @@ class EnvMap:
         return envmap
 
     @classmethod
-    def from_file_path(cls, path, skip_prepare=False) -> 'EnvMap':
+    def from_file_path(cls, path: p3d.Filename | str, skip_prepare: bool=False) -> Self:
         if not isinstance(path, p3d.Filename):
             path = p3d.Filename.from_os_specific(path)
 
@@ -127,7 +131,7 @@ class EnvMap:
         return cls(cubemap, skip_prepare=skip_prepare)
 
     @classmethod
-    def create_empty(cls) -> 'EnvMap':
+    def create_empty(cls) -> Self:
         cubemap = p3d.Texture('env_map_fallback')
         cubemap.setup_cube_map(
             2,

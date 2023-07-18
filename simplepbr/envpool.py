@@ -1,16 +1,16 @@
-import typing
+from __future__ import annotations
 
 import panda3d.core as p3d
 
 from .envmap import EnvMap
 from .logging import logger
 
-PathLikeType = typing.Union[str, p3d.Filename]
+PathLikeType = str | p3d.Filename
 
 class EnvPool:
-    _ptr: typing.Optional['EnvPool'] = None
+    _ptr: 'EnvPool' | None = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         self._envmaps: dict[p3d.Filename, EnvMap] = {}
 
     def _get_cache_path(self, envmap: EnvMap) -> p3d.Filename:

@@ -7,7 +7,7 @@ import panda3d.core as p3d
 
 import simplepbr
 
-def main():
+def main() -> None:
     parser = argparse.ArgumentParser(
         description='CLI tool to convert HDR cubemap files to simplepbr env files',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter,

@@ -1,13 +1,14 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field, InitVar
 import builtins
 import math
 import os
+import typing
 from typing_extensions import (
     Any,
     ClassVar,
     Literal,
-    Optional,
-    Union,
 )
 
 import panda3d.core as p3d
@@ -40,8 +41,10 @@ __all__ = [
     'EnvPool',
 ]
 
+ShaderDefinesType = dict[str, Any]
 
-def load_sdr_lut(filename):
+
+def load_sdr_lut(filename: str) -> p3d.Texture:
     '''Load an SDR color LUT embedded in a screenshot'''
     path = p3d.Filename(filename)
     vfs = p3d.VirtualFileSystem.get_global_ptr()
@@ -78,7 +81,7 @@ def load_sdr_lut(filename):
     return texture
 
 
-def sdr_lut_screenshot(showbase, *args, **kwargs):
+def sdr_lut_screenshot(showbase: ShowBase, *args, **kwargs) -> str | None: # type: ignore[no-untyped-def]
     '''Take a screenshot with an embedded SDR color LUT'''
     filename = showbase.screenshot(*args, **kwargs)
 
@@ -105,14 +108,14 @@ def sdr_lut_screenshot(showbase, *args, **kwargs):
             xcoord = xbase + xoff
             for yoff, gcol in enumerate(steps):
                 ycoord = ybase + maxoffset - yoff
-                image.set_xel_val(xcoord, ycoord, (rcol, gcol, bcol))
+                image.set_xel_val(xcoord, ycoord, rcol, gcol, bcol)
 
     image.write(filename)
 
     return filename
 
 
-def _add_shader_defines(shaderstr, defines):
+def _add_shader_defines(shaderstr: str, defines: ShaderDefinesType) -> str:
     shaderlines = shaderstr.split('\n')
 
     for line in shaderlines:
@@ -138,7 +141,7 @@ def _add_shader_defines(shaderstr, defines):
     )
 
 
-def _load_texture(texturepath):
+def _load_texture(texturepath: str) -> p3d.Texture:
     texturedir = p3d.Filename.from_os_specific(
         os.path.join(
             os.path.dirname(__file__),
@@ -156,7 +159,7 @@ def _load_texture(texturepath):
     return texture
 
 
-def _load_shader_str(shaderpath, defines=None):
+def _load_shader_str(shaderpath: str, defines: ShaderDefinesType | None = None) -> str:
     if shaders:
         shaderstr = shaders[shaderpath]
     else:
@@ -186,7 +189,7 @@ def _load_shader_str(shaderpath, defines=None):
     return shaderstr
 
 
-def _make_shader(name, vertex, fragment, defines):
+def _make_shader(name: str, vertex: str, fragment: str, defines: ShaderDefinesType) -> p3d.Shader:
     vertstr = _load_shader_str(vertex, defines)
     fragstr = _load_shader_str(fragment, defines)
     shader = p3d.Shader.make(
@@ -203,7 +206,7 @@ def _get_showbase_attr(attr: str) -> Any:
     return getattr(showbase, attr)
 
 
-def _get_default_330():
+def _get_default_330() -> bool:
     cvar = p3d.ConfigVariableInt('gl-version')
     gl_version = [
         cvar.get_word(i)
@@ -238,9 +241,9 @@ class Pipeline:
     ]
 
     # Public instance variables
-    render_node: p3d.NodePath = field(default_factory=lambda: _get_showbase_attr('render'))
+    render_node: p3d.NodePath[p3d.PandaNode] = field(default_factory=lambda: _get_showbase_attr('render'))
     window: p3d.GraphicsOutput = field(default_factory=lambda: _get_showbase_attr('win'))
-    camera_node: p3d.NodePath = field(default_factory=lambda: _get_showbase_attr('cam'))
+    camera_node: p3d.NodePath[p3d.Camera] = field(default_factory=lambda: _get_showbase_attr('cam'))
     taskmgr: TaskManager = field(default_factory=lambda: _get_showbase_attr('task_mgr'))
     msaa_samples: Literal[0, 2, 4, 8, 16] = 4
     max_lights: int = 8
@@ -251,18 +254,18 @@ class Pipeline:
     enable_shadows: bool = False
     enable_fog: bool  = False
     use_330: bool = field(default_factory=_get_default_330)
-    use_hardware_skinning: InitVar[Union[bool, None]] = None
+    use_hardware_skinning: InitVar[bool | None] = None
     enable_hardware_skinning: bool = True
-    sdr_lut: Optional[p3d.Texture] = None
+    sdr_lut: p3d.Texture | None = None
     sdr_lut_factor: float = 1.0
-    env_map: Union[EnvMap, str, None] = None
+    env_map: EnvMap | str | None = None
 
     # Private instance variables
     _shader_ready: bool = False
     _filtermgr: FilterManager = field(init=False)
-    _post_process_quad: p3d.NodePath = field(init=False)
+    _post_process_quad: p3d.NodePath[p3d.GeomNode] = field(init=False)
 
-    def __post_init__(self, use_hardware_skinning):
+    def __post_init__(self, use_hardware_skinning: bool) -> None:
         self._shader_ready = False
 
         # Create a FilterManager instance
@@ -273,12 +276,6 @@ class Pipeline:
 
         # Make sure we have AA for if/when MSAA is enabled
         self.render_node.set_antialias(p3d.AntialiasAttrib.M_auto)
-
-        # Setup env map to be used for irradiance
-        if self.env_map is None:
-            self.env_map = self._EMPTY_ENV_MAP
-        if not isinstance(self.env_map, EnvMap):
-            self.env_map = EnvPool.ptr().load(self.env_map)
 
         # PBR Shader
         self.enable_hardware_skinning = use_hardware_skinning if use_hardware_skinning is not None else self.use_330
@@ -292,15 +289,14 @@ class Pipeline:
 
         self._shader_ready = True
 
-
-    def __setattr__(self, name, value):
+    def __setattr__(self, name: str, value: Any) -> None:
         prev_value = getattr(self, name, None)
         super().__setattr__(name, value)
 
         if not self._shader_ready:
             return
 
-        def resetup_tonemap():
+        def resetup_tonemap() -> None:
             # Destroy previous buffers so we can re-create
             self._filtermgr.cleanup()
 
@@ -312,11 +308,6 @@ class Pipeline:
             self._post_process_quad.set_shader_input('exposure', self.exposure)
         elif name == 'sdr_lut_factor':
             self._post_process_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
-        elif name == 'env_map':
-            if value is None:
-                self.env_map = self._EMPTY_ENV_MAP
-            elif not isinstance(value, EnvMap):
-                self.env_map = EnvPool.ptr().load(value)
 
         if name in self._PBR_VARS and prev_value != value:
             self._recompile_pbr()
@@ -324,7 +315,7 @@ class Pipeline:
         if name in self._POST_PROC_VARS and prev_value != value:
             resetup_tonemap()
 
-    def _recompile_pbr(self):
+    def _recompile_pbr(self) -> None:
         pbr_defines = {
             'MAX_LIGHTS': self.max_lights,
             'USE_NORMAL_MAP': self.use_normal_maps,
@@ -342,17 +333,22 @@ class Pipeline:
             'simplepbr.frag',
             pbr_defines
         )
-        attr = p3d.ShaderAttrib.make(pbrshader)
+        attr = typing.cast(p3d.ShaderAttrib, p3d.ShaderAttrib.make(pbrshader))
         if self.enable_hardware_skinning:
-            attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
+            attr = typing.cast(p3d.ShaderAttrib, attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True))
         self.render_node.set_attrib(attr)
-        self.render_node.set_shader_input('sh_coeffs', self.env_map.sh_coefficients)
+        env_map = self.env_map
+        if env_map is None:
+            env_map = self._EMPTY_ENV_MAP
+        elif isinstance(env_map, str):
+            env_map = EnvPool.ptr().load(env_map)
+        self.render_node.set_shader_input('sh_coeffs', env_map.sh_coefficients)
         self.render_node.set_shader_input('brdf_lut', self._BRDF_LUT)
-        filtered_env_map = self.env_map.filtered_env_map
+        filtered_env_map = env_map.filtered_env_map
         self.render_node.set_shader_input('filtered_env_map', filtered_env_map)
         self.render_node.set_shader_input('max_reflection_lod', filtered_env_map.num_loadable_ram_mipmap_images)
 
-    def _setup_tonemapping(self):
+    def _setup_tonemapping(self) -> None:
         if self._shader_ready:
             # Destroy previous buffers so we can re-create
             self._filtermgr.cleanup()
@@ -372,7 +368,10 @@ class Pipeline:
         scene_tex = p3d.Texture()
         scene_tex.set_format(p3d.Texture.F_rgba16)
         scene_tex.set_component_type(p3d.Texture.T_float)
-        self._post_process_quad = self._filtermgr.render_scene_into(colortex=scene_tex, fbprops=fbprops)
+        postquad = self._filtermgr.render_scene_into(colortex=scene_tex, fbprops=fbprops)
+
+        if postquad is None:
+            raise RuntimeError('Failed to setup FilterManager')
 
         defines = {
             'USE_330': self.use_330,
@@ -385,14 +384,16 @@ class Pipeline:
             'tonemap.frag',
             defines
         )
-        self._post_process_quad.set_shader(tonemap_shader)
-        self._post_process_quad.set_shader_input('tex', scene_tex)
-        self._post_process_quad.set_shader_input('exposure', self.exposure)
+        postquad.set_shader(tonemap_shader)
+        postquad.set_shader_input('tex', scene_tex)
+        postquad.set_shader_input('exposure', self.exposure)
         if self.sdr_lut:
-            self._post_process_quad.set_shader_input('sdr_lut', self.sdr_lut)
-            self._post_process_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
+            postquad.set_shader_input('sdr_lut', self.sdr_lut)
+            postquad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
 
-    def get_all_casters(self):
+        self._post_process_quad = postquad
+
+    def get_all_casters(self) -> list[p3d.LightLensNode]:
         engine = p3d.GraphicsEngine.get_global_ptr()
         cameras = [
             dispregion.camera
@@ -406,7 +407,7 @@ class Pipeline:
             if not i.is_empty() and hasattr(i.node(), 'is_shadow_caster') and i.node().is_shadow_caster()
         ]
 
-    def _create_shadow_shader_attrib(self):
+    def _create_shadow_shader_attrib(self) -> p3d.ShaderAttrib:
         defines = {
             'USE_330': self.use_330,
             'ENABLE_SKINNING': self.enable_hardware_skinning,
@@ -417,12 +418,12 @@ class Pipeline:
             'shadow.frag',
             defines
         )
-        attr = p3d.ShaderAttrib.make(shader)
+        attr = typing.cast(p3d.ShaderAttrib, p3d.ShaderAttrib.make(shader))
         if self.enable_hardware_skinning:
-            attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
+            attr = typing.cast(p3d.ShaderAttrib, attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True))
         return attr
 
-    def _update(self, task):
+    def _update(self, task: p3d.PythonTask) -> int:
         # Use a simpler, faster shader for shadows
         for caster in self.get_all_casters():
             state = caster.get_initial_state()
@@ -431,13 +432,13 @@ class Pipeline:
                 state = state.add_attrib(attr, 1)
                 caster.set_initial_state(state)
 
-        return task.cont
+        return task.DS_cont
 
 
-    def verify_shaders(self):
+    def verify_shaders(self) -> None:
         gsg = self.window.gsg
 
-        def check_shader(shader):
+        def check_shader(shader: p3d.Shader) -> None:
             shader = p3d.Shader(shader)
             shader.prepare_now(gsg.prepared_objects, gsg)
             assert shader.is_prepared(gsg.prepared_objects)
