@@ -20,6 +20,7 @@ class EnvMap:
         self.sh_coefficients: p3d.PTA_LVecBase3f = p3d.PTA_LVecBase3f.empty_array(9)
         self.filtered_env_map = p3d.Texture('filtered_env_map')
         self.filtered_env_map.setup_cube_map(1, p3d.Texture.T_float, p3d.Texture.F_rgba16)
+        self.filtered_env_map.set_clear_color(p3d.LColor(0, 0, 0, 0))
 
         self._prefiltered_size = prefiltered_size
         self._prefiltered_samples = prefiltered_samples
