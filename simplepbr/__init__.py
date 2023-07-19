@@ -9,6 +9,7 @@ from typing_extensions import (
     Any,
     ClassVar,
     Literal,
+    TypeAlias,
 )
 
 import panda3d.core as p3d
@@ -41,7 +42,7 @@ __all__ = [
     'EnvPool',
 ]
 
-ShaderDefinesType = dict[str, Any]
+ShaderDefinesType: TypeAlias = 'dict[str, Any]'
 
 
 def load_sdr_lut(filename: str) -> p3d.Texture:
@@ -219,7 +220,7 @@ def _get_default_330() -> bool:
 
     return False
 
-@dataclass(kw_only=True)
+@dataclass()
 class Pipeline:
     # Class variables
     _EMPTY_ENV_MAP: ClassVar[EnvMap] = EnvMap.create_empty()

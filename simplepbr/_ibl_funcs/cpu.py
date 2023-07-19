@@ -1,14 +1,19 @@
+from __future__ import annotations
 # pylint: disable=invalid-name
+
 import functools
 import math
 import struct
 import typing
+from typing_extensions import (
+    TypeAlias
+)
 
 import panda3d.core as p3d
 
-Vec2TupleType = tuple[float, float]
-Vec3TupleType = tuple[float, float, float]
-SHTupleType = tuple[
+Vec2TupleType: TypeAlias = 'tuple[float, float]'
+Vec3TupleType: TypeAlias = 'tuple[float, float, float]'
+SHTupleType: TypeAlias = '''tuple[
     float,
     float,
     float,
@@ -18,7 +23,7 @@ SHTupleType = tuple[
     float,
     float,
     float,
-]
+]'''
 
 def calc_vector(dim: int, face_idx: int, xloc: int, yloc: int) -> Vec3TupleType:
     # Remap [0, dimension] to [-1, 1]
@@ -154,12 +159,12 @@ def van_der_corput(idx: int, base: int = 2) -> float:
     return result
 
 
-@functools.cache
+@functools.lru_cache(maxsize=None)
 def hammersley(idx: int, maxnum: int) -> Vec2TupleType:
     return (idx / maxnum, van_der_corput(idx))
 
 
-@functools.cache
+@functools.lru_cache(maxsize=None)
 def importance_sample_ggx(xi: Vec2TupleType, normal: p3d.LVector3, roughness: float) -> p3d.LVector3:
     alpha = roughness * roughness
 

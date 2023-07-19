@@ -5,7 +5,6 @@ import panda3d.core as p3d
 from .envmap import EnvMap
 from . import logging
 
-PathLikeType = str | p3d.Filename
 
 class EnvPool:
     _ptr: 'EnvPool' | None = None
@@ -23,7 +22,7 @@ class EnvPool:
         envmap = future.result()
         envmap.write(self._get_cache_path(envmap))
 
-    def load(self, filepath: PathLikeType) -> EnvMap:
+    def load(self, filepath: p3d.Filename | str) -> EnvMap:
         if not isinstance(filepath, p3d.Filename):
             filepath = p3d.Filename.from_os_specific(filepath)
 

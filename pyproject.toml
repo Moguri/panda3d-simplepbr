@@ -24,7 +24,7 @@ dependencies = [
     "panda3d >= 1.10.8",
     "typing_extensions ~= 4.7",
 ]
-requires-python = ">= 3.9"
+requires-python = ">= 3.8"
 
 [project.urls]
 homepage = "https://github.com/Moguri/panda3d-simplepbr"

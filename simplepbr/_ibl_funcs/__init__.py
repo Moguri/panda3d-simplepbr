@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import panda3d.core as p3d
 
 from . import cpu
