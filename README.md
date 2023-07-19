@@ -93,7 +93,7 @@ The `init()` function will choose typical defaults, but the following can be mod
 : Use occlusion maps, defaults to `False` (NOTE: Requires occlusion channel in metal-roughness map)
 
 `enable_shadows`
-: Enable shadow map support (breaks with point lights), defaults to False
+: Enable shadow map support, defaults to `True`
 
 `enable_fog`
 : Enable exponential fog, defaults to False

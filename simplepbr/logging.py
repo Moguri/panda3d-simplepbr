@@ -11,3 +11,6 @@ def get() -> Notifier:
 
 def info(*args) -> None:
     get().info(*args)
+
+def warning(*args) -> None:
+    get().warning(*args)

@@ -21,6 +21,7 @@ from direct.task.Task import TaskManager
 from .version import __version__
 from .envmap import EnvMap
 from .envpool import EnvPool
+from . import logging
 
 try:
     from .shaders import shaders # type: ignore
@@ -252,7 +253,7 @@ class Pipeline:
     use_emission_maps: bool = True
     use_occlusion_maps: bool = False
     exposure: float = 1.0
-    enable_shadows: bool = False
+    enable_shadows: bool = True
     enable_fog: bool  = False
     use_330: bool = field(default_factory=_get_default_330)
     use_hardware_skinning: InitVar[bool | None] = None
@@ -425,13 +426,22 @@ class Pipeline:
         return attr
 
     def _update(self, task: p3d.PythonTask) -> int:
+        recompile = False
         # Use a simpler, faster shader for shadows
         for caster in self.get_all_casters():
+            if isinstance(caster, p3d.PointLight):
+                logging.warning(f'PointLight shadow casters are not supported, disabling {caster.name}')
+                caster.set_shadow_caster(False)
+                recompile = True
+                continue
             state = caster.get_initial_state()
             if not state.has_attrib(p3d.ShaderAttrib):
                 attr = self._create_shadow_shader_attrib()
                 state = state.add_attrib(attr, 1)
                 caster.set_initial_state(state)
+
+        if recompile:
+            self._recompile_pbr()
 
         return task.DS_cont
 
