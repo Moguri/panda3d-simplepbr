@@ -243,7 +243,7 @@ void main() {
     color.rgb += (ibl_kd * ibl_diff  + ibl_spec) * ambient_occlusion;
 
     // Indirect diffuse (ambient light)
-    color.rgb += diffuse_color * p3d_LightModel.ambient.rgb * ambient_occlusion;
+    color.rgb += (diffuse_color + spec_color) * p3d_LightModel.ambient.rgb * ambient_occlusion;
 
     // Emission
     color.rgb += emission;
