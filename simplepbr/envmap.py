@@ -18,6 +18,8 @@ class EnvMap:
     def __init__(self, cubemap: p3d.Texture, *, prefiltered_size: int=64, prefiltered_samples: int=16, skip_prepare: bool=False) -> None:
         self.cubemap: p3d.Texture = cubemap
         self.sh_coefficients: p3d.PTA_LVecBase3f = p3d.PTA_LVecBase3f.empty_array(9)
+        for idx in range(len(self.sh_coefficients)):
+            self.sh_coefficients[idx] = 0.0
         self.filtered_env_map = p3d.Texture('filtered_env_map')
         self.filtered_env_map.setup_cube_map(1, p3d.Texture.T_float, p3d.Texture.F_rgba16)
         self.filtered_env_map.set_clear_color(p3d.LColor(0, 0, 0, 0))
@@ -142,7 +144,6 @@ class EnvMap:
             p3d.Texture.F_rgb
         )
         cubemap.set_clear_color(p3d.LColor(0, 0, 0, 0))
-        cubemap.make_ram_image()
         envmap =  cls(cubemap, skip_prepare=True)
         envmap.is_prepared.set_result(envmap)
         return envmap
