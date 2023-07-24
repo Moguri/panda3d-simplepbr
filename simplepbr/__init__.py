@@ -22,11 +22,8 @@ from .version import __version__
 from .envmap import EnvMap
 from .envpool import EnvPool
 from . import logging
-
-try:
-    from .shaders import shaders # type: ignore
-except ImportError:
-    shaders = None
+from . import utils
+from . import _shaderutils as shaderutils
 
 try:
     from .textures import textures # type: ignore
@@ -117,32 +114,6 @@ def sdr_lut_screenshot(showbase: ShowBase, *args, **kwargs) -> str | None: # typ
     return filename
 
 
-def _add_shader_defines(shaderstr: str, defines: ShaderDefinesType) -> str:
-    shaderlines = shaderstr.split('\n')
-
-    for line in shaderlines:
-        if '#version' in line:
-            version_line = line
-            break
-    else:
-        raise RuntimeError('Failed to find GLSL version string')
-    shaderlines.remove(version_line)
-
-
-    define_lines = [
-        f'#define {define} {value if value is not True else ""}'
-        for define, value in defines.items()
-        if value
-    ]
-
-    return '\n'.join(
-        [version_line]
-        + define_lines
-        + ['#line 1']
-        + shaderlines
-    )
-
-
 def _load_texture(texturepath: str) -> p3d.Texture:
     texturedir = p3d.Filename.from_os_specific(
         os.path.join(
@@ -159,48 +130,6 @@ def _load_texture(texturepath: str) -> p3d.Texture:
         texture = p3d.TexturePool.load_texture(texturedir / texturepath)
 
     return texture
-
-
-def _load_shader_str(shaderpath: str, defines: ShaderDefinesType | None = None) -> str:
-    if shaders:
-        shaderstr = shaders[shaderpath]
-    else:
-        shader_dir = os.path.join(os.path.dirname(__file__), 'shaders')
-
-        with open(os.path.join(shader_dir, shaderpath)) as shaderfile:
-            shaderstr = shaderfile.read()
-
-    if defines is None:
-        defines = {}
-
-    defines['p3d_TextureBaseColor'] = 'p3d_TextureModulate'
-    defines['p3d_TextureMetalRoughness'] = 'p3d_TextureSelector'
-    defines['p3d_TextureNormal'] = 'p3d_TextureNormal'
-    defines['p3d_TextureEmission'] = 'p3d_TextureEmission'
-
-    shaderstr = _add_shader_defines(shaderstr, defines)
-
-    if 'USE_330' in defines:
-        shaderstr = shaderstr.replace('#version 120', '#version 330')
-        if shaderpath.endswith('vert'):
-            shaderstr = shaderstr.replace('varying ', 'out ')
-            shaderstr = shaderstr.replace('attribute ', 'in ')
-        else:
-            shaderstr = shaderstr.replace('varying ', 'in ')
-
-    return shaderstr
-
-
-def _make_shader(name: str, vertex: str, fragment: str, defines: ShaderDefinesType) -> p3d.Shader:
-    vertstr = _load_shader_str(vertex, defines)
-    fragstr = _load_shader_str(fragment, defines)
-    shader = p3d.Shader.make(
-        p3d.Shader.SL_GLSL,
-        vertstr,
-        fragstr
-    )
-    shader.set_filename(p3d.Shader.ST_none, name)
-    return shader
 
 
 def _get_showbase_attr(attr: str) -> Any:
@@ -329,7 +258,7 @@ class Pipeline:
             'ENABLE_SKINNING': self.enable_hardware_skinning,
         }
 
-        pbrshader = _make_shader(
+        pbrshader = shaderutils.make_shader(
             'pbr',
             'simplepbr.vert',
             'simplepbr.frag',
@@ -380,7 +309,7 @@ class Pipeline:
             'USE_SDR_LUT': bool(self.sdr_lut),
         }
 
-        tonemap_shader = _make_shader(
+        tonemap_shader = shaderutils.make_shader(
             'tonemap',
             'post.vert',
             'tonemap.frag',
@@ -414,7 +343,7 @@ class Pipeline:
             'USE_330': self.use_330,
             'ENABLE_SKINNING': self.enable_hardware_skinning,
         }
-        shader = _make_shader(
+        shader = shaderutils.make_shader(
             'shadow',
             'shadow.vert',
             'shadow.frag',
