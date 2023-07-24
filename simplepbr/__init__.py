@@ -38,6 +38,7 @@ __all__ = [
     'Pipeline',
     'EnvMap',
     'EnvPool',
+    'utils',
 ]
 
 ShaderDefinesType: TypeAlias = 'dict[str, Any]'
