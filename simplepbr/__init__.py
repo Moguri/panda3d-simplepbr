@@ -156,7 +156,7 @@ class Pipeline:
     # Class variables
     _EMPTY_ENV_MAP: ClassVar[EnvMap] = EnvMap.create_empty()
     _BRDF_LUT: ClassVar[p3d.Texture] = _load_texture('brdf_lut.txo')
-    _PBR_VARS = [
+    _PBR_VARS: ClassVar[list[str]] = [
         'enable_fog',
         'enable_hardware_skinning',
         'enable_shadows',
@@ -165,7 +165,7 @@ class Pipeline:
         'use_normal_maps',
         'use_occlusion_maps',
     ]
-    _POST_PROC_VARS = [
+    _POST_PROC_VARS: ClassVar[list[str]] = [
         'camera_node',
         'msaa_samples',
         'sdr_lut',
@@ -392,4 +392,4 @@ class Pipeline:
         check_shader(attr.get_shader())
 
 
-init = Pipeline
+init = Pipeline # pylint: disable=invalid-name

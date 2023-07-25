@@ -41,5 +41,5 @@ version = {attr = "simplepbr.version.__version__"}
 [tool.setuptools]
 packages = ["simplepbr"]
 
-[tool.pytest]
+[tool.pytest.ini_options]
 addopts = "--pylint"

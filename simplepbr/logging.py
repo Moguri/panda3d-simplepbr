@@ -1,13 +1,13 @@
 from direct.directnotify.DirectNotify import DirectNotify
 from direct.directnotify.Notifier import Notifier
 
-logger = None
+LOGGER = None
 
 def get() -> Notifier:
-    global logger
-    if logger is None:
-        logger = DirectNotify().newCategory("simplepbr")
-    return logger
+    global LOGGER # pylint: disable=global-statement
+    if LOGGER is None:
+        LOGGER = DirectNotify().newCategory("simplepbr")
+    return LOGGER
 
 def info(*args) -> None:
     get().info(*args)

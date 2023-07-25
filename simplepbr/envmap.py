@@ -3,7 +3,6 @@ from __future__ import annotations
 import time
 import typing
 from typing_extensions import (
-    Any,
     Self,
 )
 
@@ -15,7 +14,13 @@ from . import _ibl_funcs as iblfuncs
 
 
 class EnvMap:
-    def __init__(self, cubemap: p3d.Texture, *, prefiltered_size: int=64, prefiltered_samples: int=16, skip_prepare: bool=False) -> None:
+    def __init__(
+        self, cubemap: p3d.Texture,
+        *,
+        prefiltered_size: int=64,
+        prefiltered_samples: int=16,
+        skip_prepare: bool=False
+    ) -> None:
         self.cubemap: p3d.Texture = cubemap
         self.sh_coefficients: p3d.PTA_LVecBase3f = p3d.PTA_LVecBase3f.empty_array(9)
         for idx in range(len(self.sh_coefficients)):
