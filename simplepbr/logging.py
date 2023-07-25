@@ -9,8 +9,8 @@ def get() -> Notifier:
         LOGGER = DirectNotify().newCategory("simplepbr")
     return LOGGER
 
-def info(*args) -> None:
-    get().info(*args)
+def info(msg: str) -> None:
+    get().info(msg)
 
-def warning(*args) -> None:
-    get().warning(*args)
+def warning(msg: str) -> None:
+    get().warning(msg)

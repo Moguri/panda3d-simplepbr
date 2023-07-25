@@ -1,8 +1,10 @@
+from __future__ import annotations
+
 import panda3d.core as p3d
 
 from . import _shaderutils as shaderutils
 
-def make_skybox(cubemap: p3d.Texture):
+def make_skybox(cubemap: p3d.Texture) -> p3d.NodePath[p3d.GeomNode]:
     verts = [
         -1.0,  1.0, -1.0,
         -1.0, -1.0, -1.0,
