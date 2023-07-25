@@ -24,7 +24,7 @@ class EnvMap:
         self.cubemap: p3d.Texture = cubemap
         self.sh_coefficients: p3d.PTA_LVecBase3f = p3d.PTA_LVecBase3f.empty_array(9)
         for idx in range(len(self.sh_coefficients)):
-            self.sh_coefficients[idx] = 0.0
+            self.sh_coefficients[idx] = p3d.LVecBase3(0, 0, 0)
         self.filtered_env_map = p3d.Texture('filtered_env_map')
         self.filtered_env_map.setup_cube_map(1, p3d.Texture.T_float, p3d.Texture.F_rgba16)
         self.filtered_env_map.set_clear_color(p3d.LColor(0, 0, 0, 0))
