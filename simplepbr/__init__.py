@@ -240,12 +240,26 @@ class Pipeline:
             self._post_process_quad.set_shader_input('exposure', self.exposure)
         elif name == 'sdr_lut_factor':
             self._post_process_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
+        elif name == 'env_map':
+            self._set_env_map_uniforms()
 
         if name in self._PBR_VARS and prev_value != value:
             self._recompile_pbr()
 
         if name in self._POST_PROC_VARS and prev_value != value:
             resetup_tonemap()
+
+    def _set_env_map_uniforms(self) -> None:
+        env_map = self.env_map
+        if env_map is None:
+            env_map = self._EMPTY_ENV_MAP
+        elif isinstance(env_map, str):
+            env_map = EnvPool.ptr().load(env_map)
+        self.render_node.set_shader_input('sh_coeffs', env_map.sh_coefficients)
+        self.render_node.set_shader_input('brdf_lut', self._BRDF_LUT)
+        filtered_env_map = env_map.filtered_env_map
+        self.render_node.set_shader_input('filtered_env_map', filtered_env_map)
+        self.render_node.set_shader_input('max_reflection_lod', filtered_env_map.num_loadable_ram_mipmap_images)
 
     def _recompile_pbr(self) -> None:
         pbr_defines = {
@@ -269,16 +283,7 @@ class Pipeline:
         if self.enable_hardware_skinning:
             attr = typing.cast(p3d.ShaderAttrib, attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True))
         self.render_node.set_attrib(attr)
-        env_map = self.env_map
-        if env_map is None:
-            env_map = self._EMPTY_ENV_MAP
-        elif isinstance(env_map, str):
-            env_map = EnvPool.ptr().load(env_map)
-        self.render_node.set_shader_input('sh_coeffs', env_map.sh_coefficients)
-        self.render_node.set_shader_input('brdf_lut', self._BRDF_LUT)
-        filtered_env_map = env_map.filtered_env_map
-        self.render_node.set_shader_input('filtered_env_map', filtered_env_map)
-        self.render_node.set_shader_input('max_reflection_lod', filtered_env_map.num_loadable_ram_mipmap_images)
+        self._set_env_map_uniforms()
 
     def _setup_tonemapping(self) -> None:
         if self._shader_ready:
