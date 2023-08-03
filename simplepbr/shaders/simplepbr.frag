@@ -233,7 +233,7 @@ void main() {
 
 
     // Indirect diffuse + specular (IBL)
-    vec3 ibl_f = fresnelSchlickRoughness(n_dot_v, F0, perceptual_roughness);
+    vec3 ibl_f = fresnelSchlickRoughness(n_dot_v, spec_color, perceptual_roughness);
     vec3 ibl_kd = (1.0 - ibl_f) * (1.0 - metallic);
     vec3 ibl_diff = base_color.rgb * max(irradiance_from_sh(world_normal), 0.0) * diffuse_function();
 
@@ -247,7 +247,6 @@ void main() {
 
     // Emission
     color.rgb += emission;
-
 
 #ifdef ENABLE_FOG
     // Exponential fog
