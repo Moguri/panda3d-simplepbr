@@ -235,6 +235,10 @@ def integrate_brdf(ndotv: float, roughness: float, num_samples: int = 1024) -> p
 def gen_brdf_lut(lutsize: int, num_samples: int = 1024) -> p3d.Texture:
     brdflut = p3d.Texture('brdf_lut')
     brdflut.setup_2d_texture(lutsize, lutsize, p3d.Texture.T_float, p3d.Texture.F_rg16)
+    brdflut.wrap_u = p3d.SamplerState.WM_clamp
+    brdflut.wrap_v = p3d.SamplerState.WM_clamp
+    brdflut.minfilter = p3d.SamplerState.FT_linear
+    brdflut.magfilter = p3d.SamplerState.FT_linear
 
     handle = typing.cast(memoryview, brdflut.modify_ram_image())
     pixelsize = brdflut.component_width * brdflut.num_components

@@ -25,9 +25,15 @@ class EnvMap:
         self.sh_coefficients: p3d.PTA_LVecBase3f = p3d.PTA_LVecBase3f.empty_array(9)
         for idx in range(len(self.sh_coefficients)):
             self.sh_coefficients[idx] = p3d.LVecBase3(0, 0, 0)
+
         self.filtered_env_map = p3d.Texture('filtered_env_map')
         self.filtered_env_map.setup_cube_map(1, p3d.Texture.T_float, p3d.Texture.F_rgba16)
         self.filtered_env_map.set_clear_color(p3d.LColor(0, 0, 0, 0))
+        self.filtered_env_map.wrap_u = p3d.SamplerState.WM_clamp
+        self.filtered_env_map.wrap_v = p3d.SamplerState.WM_clamp
+        self.filtered_env_map.wrap_w = p3d.SamplerState.WM_clamp
+        self.filtered_env_map.minfilter = p3d.SamplerState.FT_linear
+        self.filtered_env_map.magfilter = p3d.SamplerState.FT_linear_mipmap_linear
 
         self._prefiltered_size = prefiltered_size
         self._prefiltered_samples = prefiltered_samples

@@ -221,6 +221,11 @@ class Pipeline:
 
         self._shader_ready = True
 
+        self._BRDF_LUT.wrap_u = p3d.SamplerState.WM_clamp
+        self._BRDF_LUT.wrap_v = p3d.SamplerState.WM_clamp
+        self._BRDF_LUT.minfilter = p3d.SamplerState.FT_linear
+        self._BRDF_LUT.magfilter = p3d.SamplerState.FT_linear
+
     def __setattr__(self, name: str, value: Any) -> None:
         prev_value = getattr(self, name, None)
         super().__setattr__(name, value)
