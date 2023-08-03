@@ -248,7 +248,7 @@ def gen_brdf_lut(lutsize: int, num_samples: int = 1024) -> p3d.Texture:
         for xcoord in range(lutsize):
             idx = (ycoord * xsize + xcoord) * pixelsize
             result = integrate_brdf(xcoord / lutsize, ycoord / lutsize, num_samples)
-            struct.pack_into('ff', handle, idx, result[1], result[0])
+            struct.pack_into('ff', handle, idx, result[0], result[1])
 
     return brdflut
 
