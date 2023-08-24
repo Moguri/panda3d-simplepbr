@@ -202,6 +202,8 @@ class Pipeline:
 
         # Create a FilterManager instance
         self._filtermgr = FilterManager(self.window, self.camera_node)
+        if self._filtermgr.nextsort == -1000:
+            self._filtermgr.nextsort = -9
 
         # Do not force power-of-two textures
         p3d.Texture.set_textures_power_2(p3d.ATS_none)
@@ -236,6 +238,8 @@ class Pipeline:
         def resetup_tonemap() -> None:
             # Destroy previous buffers so we can re-create
             self._filtermgr.cleanup()
+            if self._filtermgr.nextsort == -1000:
+                self._filtermgr.nextsort = -9
 
             # Create a new FilterManager instance
             self._filtermgr = FilterManager(self.window, self.camera_node)
