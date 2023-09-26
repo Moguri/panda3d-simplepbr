@@ -28,7 +28,6 @@ def _add_shader_defines(shaderstr: str, defines: ShaderDefinesType) -> str:
         raise RuntimeError('Failed to find GLSL version string')
     shaderlines.remove(version_line)
 
-
     define_lines = [
         f'#define {define} {value if value is not True else ""}'
         for define, value in defines.items()
@@ -57,8 +56,6 @@ def _load_shader_str(shaderpath: str, defines: ShaderDefinesType | None = None) 
 
     defines['p3d_TextureBaseColor'] = 'p3d_TextureModulate'
     defines['p3d_TextureMetalRoughness'] = 'p3d_TextureSelector'
-    defines['p3d_TextureNormal'] = 'p3d_TextureNormal'
-    defines['p3d_TextureEmission'] = 'p3d_TextureEmission'
 
     shaderstr = _add_shader_defines(shaderstr, defines)
 
