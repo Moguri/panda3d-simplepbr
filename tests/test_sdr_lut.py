@@ -6,8 +6,8 @@ import simplepbr
 
 
 def test_save_sdr_lut(showbase, tmp_path):
-    simplepbr.sdr_lut_screenshot(showbase, namePrefix=tmp_path.as_posix())
+    simplepbr.utils.sdr_lut_screenshot(showbase, namePrefix=tmp_path.as_posix())
 
 def test_load_sdr_lut():
     filepath = p3d.Filename(os.path.dirname(__file__), 'lut.png')
-    simplepbr.load_sdr_lut(filepath)
+    simplepbr.utils.load_sdr_lut(filepath)
