@@ -13,12 +13,15 @@ from . import logging
 from . import _ibl_funcs as iblfuncs
 
 
+DEFAULT_PREFILTERED_SIZE=64
+DEFAULT_PREFILTERED_SAMPLES=16
+
 class EnvMap:
     def __init__(
         self, cubemap: p3d.Texture,
         *,
-        prefiltered_size: int=64,
-        prefiltered_samples: int=16,
+        prefiltered_size: int=DEFAULT_PREFILTERED_SIZE,
+        prefiltered_samples: int=DEFAULT_PREFILTERED_SAMPLES,
         skip_prepare: bool=False
     ) -> None:
         self.cubemap: p3d.Texture = cubemap
@@ -136,7 +139,13 @@ class EnvMap:
         return envmap
 
     @classmethod
-    def from_file_path(cls, path: p3d.Filename | str, skip_prepare: bool=False) -> Self:
+    def from_file_path(
+        cls,
+        path: p3d.Filename | str,
+        prefiltered_size: int = DEFAULT_PREFILTERED_SIZE,
+        prefiltered_samples: int = DEFAULT_PREFILTERED_SAMPLES,
+        skip_prepare: bool=False
+    ) -> Self:
         if not isinstance(path, p3d.Filename):
             path = p3d.Filename.from_os_specific(path)
 
@@ -144,7 +153,12 @@ class EnvMap:
             return cls._from_bam(path)
 
         cubemap = p3d.TexturePool.load_cube_map(path)
-        return cls(cubemap, skip_prepare=skip_prepare)
+        return cls(
+            cubemap,
+            prefiltered_size=prefiltered_size,
+            prefiltered_samples=prefiltered_samples,
+            skip_prepare=skip_prepare
+        )
 
     @classmethod
     def create_empty(cls) -> Self:
