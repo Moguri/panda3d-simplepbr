@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, InitVar
 import builtins
+import functools
 import math
 import os
 import typing
@@ -78,7 +79,43 @@ def _get_default_330() -> bool:
 
     return False
 
+
+def add_prc_fields(cls):
+    prc_types = {
+        'int': p3d.ConfigVariableInt,
+        'bool': p3d.ConfigVariableBool,
+        'float': p3d.ConfigVariableDouble,
+        'str': p3d.ConfigVariableString,
+    }
+
+    def factoryfn(attrname, attrtype, default_value):
+        name=f'simplepbr-{attrname.replace("_", "-")}'
+        return prc_types[attrtype](
+            name=name,
+            default_value=default_value,
+        ).value
+
+    def wrap(cls):
+        annotations = cls.__dict__.get('__annotations__', {})
+        for attrname, attrtype in annotations.items():
+            if attrname.startswith('_'):
+                continue
+
+            default_value = getattr(cls, attrname)
+            if attrtype.startswith('Literal') and isinstance(default_value, int):
+                attrtype = 'int'
+
+            if attrtype not in prc_types:
+                continue
+
+            setattr(cls, attrname, field(
+                default_factory=functools.partial(factoryfn, attrname, attrtype, default_value)
+            ))
+        return cls
+    return wrap(cls)
+
 @dataclass()
+@add_prc_fields
 class Pipeline:
     # Class variables
     _EMPTY_ENV_MAP: ClassVar[EnvMap] = EnvMap.create_empty()

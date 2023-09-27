@@ -1,6 +1,37 @@
 import pytest #pylint:disable=wrong-import-order
 
+import panda3d.core as p3d
+
 import simplepbr
+
+def test_setup_defaults(showbase):
+    simplepbr.init(
+        render_node=showbase.render,
+        window=showbase.win,
+        camera_node=showbase.cam,
+    )
+
+
+def test_setup_prc_variables(showbase):
+    configpage = p3d.load_prc_file_data(
+        '',
+        'simplepbr-max-lights 4\n'
+        'simplepbr-use-emission-maps f\n'
+        'simplepbr-msaa-samples 8\n'
+    )
+    pipeline = simplepbr.init(
+        render_node=showbase.render,
+        window=showbase.win,
+        camera_node=showbase.cam,
+    )
+
+    cpm = p3d.ConfigPageManager.get_global_ptr()
+    cpm.delete_explicit_page(configpage)
+
+    assert pipeline.max_lights == 4
+    assert not pipeline.use_emission_maps
+    assert pipeline.msaa_samples == 8
+
 
 @pytest.mark.parametrize('showbase', ['', 'gl-version 3 2'], indirect=True)
 @pytest.mark.parametrize('use_normal_maps', [False, True])
