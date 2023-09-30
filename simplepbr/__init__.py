@@ -175,6 +175,10 @@ class Pipeline:
         # Make sure we have AA for if/when MSAA is enabled
         self.render_node.set_antialias(p3d.AntialiasAttrib.M_auto)
 
+        # Add a default/fallback material
+        fallback_material = p3d.Material('simplepbr-fallback')
+        self.render_node.set_material(fallback_material)
+
         # PBR Shader
         self.enable_hardware_skinning = use_hardware_skinning if use_hardware_skinning is not None else self.use_330
         self._recompile_pbr()
