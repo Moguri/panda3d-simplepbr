@@ -153,7 +153,7 @@ void main() {
     float metallic = clamp(p3d_Material.metallic * metal_rough.b, 0.0, 1.0);
     float perceptual_roughness = clamp(p3d_Material.roughness * metal_rough.g,  0.0, 1.0);
     float alpha_roughness = perceptual_roughness * perceptual_roughness;
-    vec4 base_color = p3d_Material.baseColor * v_color * p3d_ColorScale * texture2D(p3d_TextureBaseColor, v_texcoord);
+    vec4 base_color = p3d_Material.baseColor * v_color * p3d_ColorScale * (texture2D(p3d_TextureBaseColor, v_texcoord) + p3d_TexAlphaOnly);
     vec3 diffuse_color = (base_color.rgb * (vec3(1.0) - F0)) * (1.0 - metallic);
     vec3 spec_color = mix(F0, base_color.rgb, metallic);
 #ifdef USE_NORMAL_MAP
@@ -179,7 +179,7 @@ void main() {
     vec3 emission = vec3(0.0);
 #endif
 
-    vec4 color = vec4(vec3(0.0), base_color.a) + p3d_TexAlphaOnly;
+    vec4 color = vec4(vec3(0.0), base_color.a);
 
     float n_dot_v = clamp(abs(dot(n, v)), 0.0, 1.0);
 
