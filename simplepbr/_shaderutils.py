@@ -47,6 +47,8 @@ def _add_shader_defines(shaderstr: str, defines: ShaderDefinesType) -> str:
 
 
 def _load_shader_str(shaderpath: str, defines: ShaderDefinesType | None = None) -> str:
+    shaderstr = ''
+
     if shaders:
         shaderstr = shaders[shaderpath]
     else:
@@ -62,7 +64,6 @@ def _load_shader_str(shaderpath: str, defines: ShaderDefinesType | None = None) 
     defines['p3d_TextureMetalRoughness'] = 'p3d_TextureSelector'
 
     shaderstr = _add_shader_defines(shaderstr, defines)
-
     if 'USE_330' in defines:
         shaderstr = shaderstr.replace('#version 120', '#version 330')
         if shaderpath.endswith('vert'):

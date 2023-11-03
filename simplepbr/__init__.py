@@ -80,7 +80,7 @@ def _get_default_330() -> bool:
     return False
 
 
-def add_prc_fields(cls):
+def add_prc_fields(cls: type) -> type:
     prc_types = {
         'int': p3d.ConfigVariableInt,
         'bool': p3d.ConfigVariableBool,
@@ -88,14 +88,14 @@ def add_prc_fields(cls):
         'str': p3d.ConfigVariableString,
     }
 
-    def factoryfn(attrname, attrtype, default_value):
+    def factoryfn(attrname: str, attrtype: str, default_value: Any) -> Any:
         name=f'simplepbr-{attrname.replace("_", "-")}'
         return prc_types[attrtype](
             name=name,
             default_value=default_value,
         ).value
 
-    def wrap(cls):
+    def wrap(cls: type) -> type:
         annotations = cls.__dict__.get('__annotations__', {})
         for attrname, attrtype in annotations.items():
             if attrname.startswith('_'):
@@ -323,7 +323,7 @@ class Pipeline:
             for dispregion in win.active_display_regions
         ]
 
-        def is_caster(node: p3d.NodePath) -> bool:
+        def is_caster(node: p3d.NodePath[p3d.PandaNode]) -> bool:
             if node.is_empty():
                 return False
 
