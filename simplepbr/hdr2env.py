@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 import argparse
-import time
 
 
 import panda3d.core as p3d
@@ -44,11 +43,9 @@ def main() -> None:
     envmap = simplepbr.EnvMap.from_file_path(
         args.src,
         prefiltered_size=args.prefiltered_size,
-        prefiltered_samples=args.prefiltered_samples
+        prefiltered_samples=args.prefiltered_samples,
+        blocking_prepare=True,
     )
-    while not envmap.is_prepared.done():
-        p3d.AsyncTaskManager.get_global_ptr().poll()
-        time.sleep(1)
 
     envmap.write(args.dst)
 

@@ -22,7 +22,8 @@ class EnvMap:
         *,
         prefiltered_size: int=DEFAULT_PREFILTERED_SIZE,
         prefiltered_samples: int=DEFAULT_PREFILTERED_SAMPLES,
-        skip_prepare: bool=False
+        skip_prepare: bool=False,
+        blocking_prepare: bool=False,
     ) -> None:
         self.cubemap: p3d.Texture = cubemap
         self.sh_coefficients: p3d.PTA_LVecBase3f = p3d.PTA_LVecBase3f.empty_array(9)
@@ -41,6 +42,8 @@ class EnvMap:
         self._prefiltered_size = prefiltered_size
         self._prefiltered_samples = prefiltered_samples
         self.is_prepared = p3d.AsyncFuture()
+
+        self._blocking_prepare = blocking_prepare
 
         if not skip_prepare:
             self.prepare()
@@ -89,9 +92,12 @@ class EnvMap:
         threads = []
 
         for job in jobs:
-            thread = threading.Thread(target=job)
-            threads.append(thread)
-            thread.start()
+            if self._blocking_prepare:
+                job()
+            else:
+                thread = threading.Thread(target=job)
+                threads.append(thread)
+                thread.start()
 
         def wait_threads(future: p3d.AsyncFuture) -> None:
             for thread in threads:
@@ -101,8 +107,12 @@ class EnvMap:
         def donecb(_: p3d.AsyncFuture) -> None:
             self.is_prepared.set_result(self)
         future.add_done_callback(donecb)
-        thread = threading.Thread(target=wait_threads, args=[future])
-        thread.start()
+
+        if self._blocking_prepare:
+            wait_threads(future)
+        else:
+            thread = threading.Thread(target=wait_threads, args=[future])
+            thread.start()
         return future
 
     def write(self, filepath: p3d.Filename) -> None:
@@ -146,7 +156,8 @@ class EnvMap:
         path: p3d.Filename | str,
         prefiltered_size: int = DEFAULT_PREFILTERED_SIZE,
         prefiltered_samples: int = DEFAULT_PREFILTERED_SAMPLES,
-        skip_prepare: bool=False
+        skip_prepare: bool=False,
+        blocking_prepare: bool=False,
     ) -> Self:
         if not isinstance(path, p3d.Filename):
             path = p3d.Filename.from_os_specific(path)
@@ -159,7 +170,8 @@ class EnvMap:
             cubemap,
             prefiltered_size=prefiltered_size,
             prefiltered_samples=prefiltered_samples,
-            skip_prepare=skip_prepare
+            skip_prepare=skip_prepare,
+            blocking_prepare=blocking_prepare,
         )
 
     @classmethod
