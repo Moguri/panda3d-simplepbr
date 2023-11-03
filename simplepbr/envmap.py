@@ -10,7 +10,7 @@ import panda3d.core as p3d
 from direct.stdpy import threading
 
 from . import logging
-from . import _ibl_funcs as iblfuncs
+from . import _ibl_funcs_cpu as iblfuncs
 
 
 DEFAULT_PREFILTERED_SIZE=64
