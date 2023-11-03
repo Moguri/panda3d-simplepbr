@@ -3,10 +3,14 @@ from __future__ import annotations
 import os
 
 from typing_extensions import (
+    TYPE_CHECKING,
     TypeAlias,
 )
 
 import panda3d.core as p3d
+
+if TYPE_CHECKING:
+    from typing import Any
 
 try:
     from .shaders import shaders # type: ignore
@@ -48,7 +52,7 @@ def _load_shader_str(shaderpath: str, defines: ShaderDefinesType | None = None) 
     else:
         shader_dir = os.path.join(os.path.dirname(__file__), 'shaders')
 
-        with open(os.path.join(shader_dir, shaderpath)) as shaderfile:
+        with open(os.path.join(shader_dir, shaderpath), encoding='utf8') as shaderfile:
             shaderstr = shaderfile.read()
 
     if defines is None:

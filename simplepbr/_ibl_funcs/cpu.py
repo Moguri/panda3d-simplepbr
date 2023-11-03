@@ -165,7 +165,11 @@ def hammersley(idx: int, maxnum: int) -> Vec2TupleType:
 
 
 @functools.lru_cache(maxsize=None)
-def importance_sample_ggx(xi: Vec2TupleType, normal: p3d.LVector3, roughness: float) -> p3d.LVector3:
+def importance_sample_ggx(
+    xi: Vec2TupleType,
+    normal: p3d.LVector3,
+    roughness: float
+) -> p3d.LVector3:
     alpha = roughness * roughness
 
     phi = 2 * math.pi * xi[0]
@@ -192,7 +196,12 @@ def geometry_schlick_ggx(ndotv: float, roughness: float) -> float:
     return ndotv / (ndotv * (1 - kibl) + kibl)
 
 
-def geometry_smith(normal: p3d.LVector3, view: p3d.LVector3, light: p3d.LVector3, roughness: float) -> float:
+def geometry_smith(
+    normal: p3d.LVector3,
+    view: p3d.LVector3,
+    light: p3d.LVector3,
+    roughness: float
+) -> float:
     ndotv = max(normal.dot(view), 0)
     ndotl = max(normal.dot(light), 0)
 
@@ -253,7 +262,12 @@ def gen_brdf_lut(lutsize: int, num_samples: int = 1024) -> p3d.Texture:
     return brdflut
 
 
-def filter_sample(pos: p3d.LVector3, envmap: p3d.TexturePeeker, roughness: float, num_samples: int) -> p3d.LVector3:
+def filter_sample(
+    pos: p3d.LVector3,
+    envmap: p3d.TexturePeeker,
+    roughness: float,
+    num_samples: int
+) -> p3d.LVector3:
     view = normal = pos.normalized()
     totweight = 0.0
     retval = p3d.LVector3(0.0, 0.0, 0.0)
@@ -308,5 +322,8 @@ def filter_env_map(
             vec = calc_vector(mipsize, face, xcoord, ycoord)
             pos = p3d.LVector3(vec[0], vec[1], vec[2])
             result = filter_sample(pos, peeker, roughness, num_samples)
-            struct.pack_into('fff', typing.cast(memoryview, texdata), offset, result[2], result[1], result[0])
+            struct.pack_into(
+                'fff',
+                typing.cast(memoryview, texdata), offset, result[2], result[1], result[0]
+            )
         filtered.set_ram_mipmap_image(i, texdata)

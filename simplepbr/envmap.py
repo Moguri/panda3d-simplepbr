@@ -26,7 +26,7 @@ class EnvMap:
     ) -> None:
         self.cubemap: p3d.Texture = cubemap
         self.sh_coefficients: p3d.PTA_LVecBase3f = p3d.PTA_LVecBase3f.empty_array(9)
-        for idx in range(len(self.sh_coefficients)):
+        for idx, _ in enumerate(self.sh_coefficients):
             self.sh_coefficients[idx] = p3d.LVecBase3(0, 0, 0)
 
         self.filtered_env_map = p3d.Texture('filtered_env_map')
@@ -63,7 +63,8 @@ class EnvMap:
 
             tottime = (time.perf_counter() - starttime) * 1000
             logging.info(
-                f'Spherical harmonics coefficients for {self.cubemap.name} calculated in {tottime:.3f}ms'
+                f'Spherical harmonics coefficients for {self.cubemap.name} '
+                f'calculated in {tottime:.3f}ms'
             )
 
         def filter_env_map() -> None:
@@ -77,7 +78,8 @@ class EnvMap:
 
             tottime = (time.perf_counter() - starttime) * 1000
             logging.info(
-                f'Pre-filtered environment map for {self.cubemap.name} calculated in {tottime:.3f}ms'
+                f'Pre-filtered environment map for {self.cubemap.name} '
+                f'calculated in {tottime:.3f}ms'
             )
 
         jobs = [
@@ -129,7 +131,7 @@ class EnvMap:
         dgram = p3d.Datagram()
         reader.source.get_datagram(dgram)
         scan = p3d.DatagramIterator(dgram)
-        for idx in range(len(envmap.sh_coefficients)):
+        for idx, _ in enumerate(envmap.sh_coefficients):
             envmap.sh_coefficients[idx] = p3d.LVector3(
                 scan.get_stdfloat(),
                 scan.get_stdfloat(),

@@ -96,7 +96,7 @@ def load_sdr_lut(filename: str) -> p3d.Texture:
         or not path.is_regular_file()
     )
     if failed:
-        raise RuntimeError('Failed to find file {}'.format(filename))
+        raise RuntimeError(f'Failed to find file {filename}')
 
     image = p3d.PNMImage(path)
 
@@ -124,7 +124,11 @@ def load_sdr_lut(filename: str) -> p3d.Texture:
     return texture
 
 
-def sdr_lut_screenshot(showbase: ShowBase, *args, **kwargs) -> str | None: # type: ignore[no-untyped-def]
+def sdr_lut_screenshot( # type: ignore[no-untyped-def]
+    showbase: ShowBase,
+    *args,
+    **kwargs
+) -> str | None:
     '''Take a screenshot with an embedded SDR color LUT'''
     filename = showbase.screenshot(*args, **kwargs)
 

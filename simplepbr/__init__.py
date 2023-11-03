@@ -108,6 +108,7 @@ def add_prc_fields(cls):
             if attrtype not in prc_types:
                 continue
 
+            # pylint:disable-next=invalid-field-call
             setattr(cls, attrname, field(
                 default_factory=functools.partial(factoryfn, attrname, attrtype, default_value)
             ))
@@ -137,7 +138,9 @@ class Pipeline:
     ]
 
     # Public instance variables
-    render_node: p3d.NodePath[p3d.PandaNode] = field(default_factory=lambda: _get_showbase_attr('render'))
+    render_node: p3d.NodePath[p3d.PandaNode] = field(
+        default_factory=lambda: _get_showbase_attr('render')
+    )
     window: p3d.GraphicsOutput = field(default_factory=lambda: _get_showbase_attr('win'))
     camera_node: p3d.NodePath[p3d.Camera] = field(default_factory=lambda: _get_showbase_attr('cam'))
     taskmgr: TaskManager = field(default_factory=lambda: _get_showbase_attr('task_mgr'))
@@ -161,7 +164,7 @@ class Pipeline:
     _filtermgr: FilterManager = field(init=False)
     _post_process_quad: p3d.NodePath[p3d.GeomNode] = field(init=False)
 
-    def __post_init__(self, use_hardware_skinning: bool) -> None:
+    def __post_init__(self, use_hardware_skinning: bool | None) -> None:
         self._shader_ready = False
 
         # Create a FilterManager instance
@@ -180,7 +183,9 @@ class Pipeline:
         self.render_node.set_material(fallback_material)
 
         # PBR Shader
-        self.enable_hardware_skinning = use_hardware_skinning if use_hardware_skinning is not None else self.use_330
+        if use_hardware_skinning is None:
+            use_hardware_skinning = self.use_330
+        self.enable_hardware_skinning = use_hardware_skinning
         self._recompile_pbr()
 
         # Tonemapping
@@ -236,7 +241,10 @@ class Pipeline:
         self.render_node.set_shader_input('brdf_lut', self._BRDF_LUT)
         filtered_env_map = env_map.filtered_env_map
         self.render_node.set_shader_input('filtered_env_map', filtered_env_map)
-        self.render_node.set_shader_input('max_reflection_lod', filtered_env_map.num_loadable_ram_mipmap_images)
+        self.render_node.set_shader_input(
+            'max_reflection_lod',
+            filtered_env_map.num_loadable_ram_mipmap_images
+        )
 
     def _recompile_pbr(self) -> None:
         pbr_defines = {
@@ -256,9 +264,9 @@ class Pipeline:
             'simplepbr.frag',
             pbr_defines
         )
-        attr = typing.cast(p3d.ShaderAttrib, p3d.ShaderAttrib.make(pbrshader))
+        attr = p3d.ShaderAttrib.make(pbrshader)
         if self.enable_hardware_skinning:
-            attr = typing.cast(p3d.ShaderAttrib, attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True))
+            attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
         self.render_node.set_attrib(attr)
         self._set_env_map_uniforms()
 
@@ -315,10 +323,17 @@ class Pipeline:
             for dispregion in win.active_display_regions
         ]
 
+        def is_caster(node: p3d.NodePath) -> bool:
+            if node.is_empty():
+                return False
+
+            pandanode = node.node()
+            return hasattr(pandanode, 'is_shadow_caster') and pandanode.is_shadow_caster()
+
         return [
             i.node()
             for i in cameras
-            if not i.is_empty() and hasattr(i.node(), 'is_shadow_caster') and i.node().is_shadow_caster()
+            if is_caster(i)
         ]
 
     def _create_shadow_shader_attrib(self) -> p3d.ShaderAttrib:
@@ -332,9 +347,9 @@ class Pipeline:
             'shadow.frag',
             defines
         )
-        attr = typing.cast(p3d.ShaderAttrib, p3d.ShaderAttrib.make(shader))
+        attr = p3d.ShaderAttrib.make(shader)
         if self.enable_hardware_skinning:
-            attr = typing.cast(p3d.ShaderAttrib, attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True))
+            attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
         return attr
 
     def _update(self, task: p3d.PythonTask) -> int:
@@ -342,7 +357,9 @@ class Pipeline:
         # Use a simpler, faster shader for shadows
         for caster in self.get_all_casters():
             if isinstance(caster, p3d.PointLight):
-                logging.warning(f'PointLight shadow casters are not supported, disabling {caster.name}')
+                logging.warning(
+                    f'PointLight shadow casters are not supported, disabling {caster.name}'
+                )
                 caster.set_shadow_caster(False)
                 recompile = True
                 continue
