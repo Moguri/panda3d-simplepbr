@@ -108,26 +108,21 @@ def get_sh_coeffs_from_cube_map(texcubemap: p3d.Texture) -> list[p3d.LVector3]:
     colorptr = p3d.LColor()
 
     # SH Basis
-    samples = (
-        (face, x, y)
-        for face in range(texcubemap.z_size)
-        for x in range(texcubemap.x_size)
-        for y in range(texcubemap.y_size)
-    )
+    for face in range(texcubemap.z_size):
+        for x in range(texcubemap.x_size):
+            for y in range(texcubemap.y_size):
+                # Grab the color value
+                peeker.fetch_pixel(colorptr, x, y, face)
+                color = colorptr.xyz
 
-    for sample in samples:
-        # Grab the color value
-        peeker.fetch_pixel(colorptr, sample[1], sample[2], sample[0])
-        color = colorptr.xyz
+                # Use SA as a weight to better handle corners (box vs sphere)
+                color *= calc_solid_angle(invdim, x, y)
 
-        # Use SA as a weight to better handle corners (box vs sphere)
-        color *= calc_solid_angle(invdim, sample[1], sample[2])
-
-        # Multiply color by SH basis and add results
-        vec = calc_vector(dim, *sample)
-        basis = get_sh_basis_from_vector(vec)
-        for idx, value in enumerate(basis):
-            shcoeffs[idx] += color * value
+                # Multiply color by SH basis and add results
+                vec = calc_vector(dim, face, x, y)
+                basis = get_sh_basis_from_vector(vec)
+                for idx, value in enumerate(basis):
+                    shcoeffs[idx] += color * value
 
     # Convolution with cosine lobe for irradiance
     # this is actually for reconstruction, but we can bake it in here to avoid
@@ -309,21 +304,16 @@ def filter_env_map(
         mipsize = int(size * 0.5 ** i)
         roughness = i / num_mipmaps
         texdata = p3d.PTA_uchar.empty_array(mipsize * mipsize * 6 * pixelsize)
-        coords = (
-            (face, x, y)
-            for face in range(6)
-            for x in range(mipsize)
-            for y in range(mipsize)
-        )
 
-        for coord in coords:
-            face, xcoord, ycoord = coord
-            offset = ((face * mipsize + ycoord) * mipsize + xcoord) * pixelsize
-            vec = calc_vector(mipsize, face, xcoord, ycoord)
-            pos = p3d.LVector3(vec[0], vec[1], vec[2])
-            result = filter_sample(pos, peeker, roughness, num_samples)
-            struct.pack_into(
-                'fff',
-                typing.cast(memoryview, texdata), offset, result[2], result[1], result[0]
-            )
+        for face in range(6):
+            for xcoord in range(mipsize):
+                for ycoord in range(mipsize):
+                    offset = ((face * mipsize + ycoord) * mipsize + xcoord) * pixelsize
+                    vec = calc_vector(mipsize, face, xcoord, ycoord)
+                    pos = p3d.LVector3(vec[0], vec[1], vec[2])
+                    result = filter_sample(pos, peeker, roughness, num_samples)
+                    struct.pack_into(
+                        'fff',
+                        typing.cast(memoryview, texdata), offset, result[2], result[1], result[0]
+                    )
         filtered.set_ram_mipmap_image(i, texdata)
