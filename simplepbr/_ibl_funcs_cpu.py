@@ -6,7 +6,8 @@ import math
 import struct
 import typing
 from typing_extensions import (
-    TypeAlias
+    TypeAlias,
+    Final,
 )
 
 import panda3d.core as p3d
@@ -159,7 +160,8 @@ def hammersley(idx: int, maxnum: int) -> Vec2TupleType:
     return (idx / maxnum, van_der_corput(idx))
 
 
-@functools.lru_cache(maxsize=None)
+VEC_Z: Final = p3d.LVector3(0, 0, 1)
+VEC_X: Final = p3d.LVector3(1, 0, 0)
 def importance_sample_ggx(
     xi: Vec2TupleType,
     normal: p3d.LVector3,
@@ -171,18 +173,16 @@ def importance_sample_ggx(
     costheta = math.sqrt((1 - xi[1]) / (1 + (alpha * alpha - 1) * xi[1]))
     sintheta = math.sqrt(1 - costheta * costheta)
 
-    hvec = p3d.LVector3(
-        math.cos(phi) * sintheta,
-        math.sin(phi) * sintheta,
-        costheta
-    )
+    hvec_x = math.cos(phi) * sintheta
+    hvec_y = math.sin(phi) * sintheta
+    hvec_z = costheta
 
-    upvec = p3d.LVector3(0, 0, 1) if abs(normal.z < 0.999) else p3d.LVector3(1, 0, 0)
+    upvec = VEC_Z if abs(normal.z < 0.999) else VEC_X
     tangent = upvec.cross(normal)
     tangent.normalize()
     bitangent = normal.cross(tangent)
 
-    return (tangent * hvec.x + bitangent * hvec.y + normal * hvec.z).normalized()
+    return (tangent * hvec_x + bitangent * hvec_y + normal * hvec_z).normalized()
 
 def geometry_schlick_ggx(ndotv: float, roughness: float) -> float:
     alpha = roughness
@@ -263,6 +263,7 @@ def filter_sample(
     roughness: float,
     num_samples: int
 ) -> p3d.LVector3:
+    px, py, pz = pos
     view = normal = pos.normalized()
     totweight = 0.0
     retval = p3d.LVector3(0.0, 0.0, 0.0)
@@ -276,7 +277,7 @@ def filter_sample(
 
         ndotl = max(normal.dot(light), 0.0)
         if ndotl > 0.0:
-            envmap.lookup(colorptr, *pos)
+            envmap.lookup(colorptr, px, py, pz)
             retval += colorptr.xyz * ndotl
             totweight += ndotl
 
