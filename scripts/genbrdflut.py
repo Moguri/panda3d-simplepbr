@@ -3,10 +3,10 @@ import os
 
 import panda3d.core as p3d
 
-from simplepbr import _ibl_funcs as ibl
+from simplepbr import _ibl_funcs_cpu as iblfuncs
 
 def main():
-    brdflut = ibl.gen_brdf_lut(512, num_samples=1024)
+    brdflut = iblfuncs.gen_brdf_lut(512, num_samples=1024)
     outfile = p3d.Filename.from_os_specific(
         os.path.join(
             os.path.dirname(__file__),
