@@ -47,22 +47,23 @@ def calc_vector(dim: int, face_idx: int, xloc: int, yloc: int) -> Vec3TupleType:
     return vec
 
 
-def calc_sphere_quadrant_area(x: float, y: float) -> float:
-    return math.atan2(x*y, math.sqrt(x*x + y*y  + 1))
-
-
-def calc_solid_angle(invdim: float, x: int, y: int) -> float:
-    s = ((float(x) + 0.5) * 2 * invdim) - 1
-    t = ((float(y) + 0.5) * 2 * invdim) - 1
+def calc_solid_angle(invdim: float, x: float, y: float) -> float:
+    s = ((x + 0.5) * 2 * invdim) - 1
+    t = ((y + 0.5) * 2 * invdim) - 1
     x0 = s - invdim
     y0 = t - invdim
     x1 = s + invdim
     y1 = t + invdim
 
-    return calc_sphere_quadrant_area(x0, y0) - \
-        calc_sphere_quadrant_area(x0, y1) - \
-        calc_sphere_quadrant_area(x1, y0) + \
-        calc_sphere_quadrant_area(x1, y1)
+    x02 = x0 * x0
+    y02 = y0 * y0
+    x12 = x1 * x1
+    y12 = y1 * y1
+
+    return math.atan2(x0*y0, math.sqrt(x02 + y02  + 1)) - \
+        math.atan2(x0*y1, math.sqrt(x02 + y12 + 1)) - \
+        math.atan2(x1*y0, math.sqrt(x12 + y02 + 1)) + \
+        math.atan2(x1*y1, math.sqrt(x12 + y12 + 1))
 
 
 def get_sh_basis_from_vector(vec: Vec3TupleType) -> SHTupleType:
