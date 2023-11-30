@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import panda3d.core as p3d
 
 from .envmap import (
@@ -28,10 +30,13 @@ class EnvPool:
 
     def load(
         self,
-        filepath: p3d.Filename | str,
+        filepath: p3d.Filename | Path | str,
         prefiltered_size: int = DEFAULT_PREFILTERED_SIZE,
         prefiltered_samples: int = DEFAULT_PREFILTERED_SAMPLES,
     ) -> EnvMap:
+        if isinstance(filepath, Path):
+            filepath = p3d.Filename(filepath)
+
         if not isinstance(filepath, p3d.Filename):
             filepath = p3d.Filename.from_os_specific(filepath)
 

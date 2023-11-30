@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 import time
 import typing
 from typing_extensions import (
@@ -153,12 +154,15 @@ class EnvMap:
     @classmethod
     def from_file_path(
         cls,
-        path: p3d.Filename | str,
+        path: p3d.Filename | Path | str,
         prefiltered_size: int = DEFAULT_PREFILTERED_SIZE,
         prefiltered_samples: int = DEFAULT_PREFILTERED_SAMPLES,
         skip_prepare: bool=False,
         blocking_prepare: bool=False,
     ) -> Self:
+        if isinstance(path, Path):
+            path = p3d.Filename(path)
+
         if not isinstance(path, p3d.Filename):
             path = p3d.Filename.from_os_specific(path)
 
