@@ -26,23 +26,29 @@ SHTupleType: TypeAlias = '''tuple[
     float,
 ]'''
 
-def calc_vector(dim: int, face_idx: int, xloc: int, yloc: int) -> Vec3TupleType:
+
+def calc_vector(dim: int, face_idx: int, xloc: float, yloc: float) -> Vec3TupleType:
+    maxidx = dim - 1
     # Remap [0, dimension] to [-1, 1]
-    xcoord = float(xloc) / float((dim - 1) * 2 - 1)
-    ycoord = float(1 - yloc) / float((dim - 1) * 2)
+    xcoord = xloc / maxidx * 2 - 1
+    ycoord = (maxidx - yloc) / maxidx * 2 - 1
+
+    # This should always be the largest component, so add some room for
+    # xcoord or ycoord to be 1.0
+    unitlength = 1.00001
 
     if face_idx == 0:
-        vec = (1.0, ycoord, -xcoord)
+        vec = (unitlength, ycoord, -xcoord)
     elif face_idx == 1:
-        vec = (-1.0, ycoord, xcoord)
+        vec = (-unitlength, ycoord, xcoord)
     elif face_idx == 2:
-        vec = (xcoord, 1.0, -ycoord)
+        vec = (xcoord, unitlength, -ycoord)
     elif face_idx == 3:
-        vec = (xcoord, -1.0, ycoord)
+        vec = (xcoord, -unitlength, ycoord)
     elif face_idx == 4:
-        vec = (xcoord, ycoord, 1.0)
+        vec = (xcoord, ycoord, unitlength)
     elif face_idx == 5:
-        vec = (-xcoord, ycoord, -1.0)
+        vec = (-xcoord, ycoord, -unitlength)
 
     return vec
 
