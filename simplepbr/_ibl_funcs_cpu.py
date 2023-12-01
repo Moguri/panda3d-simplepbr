@@ -309,7 +309,7 @@ def filter_env_map(
 
     for i in range(num_mipmaps):
         mipsize = int(size * 0.5 ** i)
-        roughness = i / num_mipmaps
+        roughness = 1 if num_mipmaps == 1 else i / (num_mipmaps - 1)
         texdata = p3d.PTA_uchar.empty_array(mipsize * mipsize * 6 * pixelsize)
 
         for face in range(6):
