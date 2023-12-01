@@ -270,7 +270,6 @@ def filter_sample(
     roughness: float,
     num_samples: int
 ) -> p3d.LVector3:
-    px, py, pz = pos
     view = normal = pos.normalized()
     totweight = 0.0
     retval = p3d.LVector3(0.0, 0.0, 0.0)
@@ -284,7 +283,7 @@ def filter_sample(
 
         ndotl = max(normal.dot(light), 0.0)
         if ndotl > 0.0:
-            envmap.lookup(colorptr, px, py, pz)
+            envmap.lookup(colorptr, light.x, light.y, light.z)
             retval += colorptr.xyz * ndotl
             totweight += ndotl
 
