@@ -49,7 +49,12 @@ class EnvPool:
             self._envmaps[filepath] = envmap
             return envmap
 
-        envmap = EnvMap.from_file_path(filepath, skip_prepare=True)
+        envmap = EnvMap.from_file_path(
+            filepath,
+            skip_prepare=True,
+            prefiltered_size=prefiltered_size,
+            prefiltered_samples=prefiltered_samples,
+        )
         cache_file = self._get_cache_path(envmap)
 
         if cache_file.exists():
