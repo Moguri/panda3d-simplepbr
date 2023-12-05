@@ -1,11 +1,10 @@
 ![Build Status](https://github.com/Moguri/panda3d-simplepbr/workflows/Pipeline/badge.svg)
-[![Panda3D Versions](https://img.shields.io/badge/panda3d-1.10%20%7C%201.11-blue.svg)](https://www.panda3d.org/)
 [![](https://img.shields.io/github/license/Moguri/panda3d-simplepbr.svg)](https://choosealicense.com/licenses/bsd-3-clause/)
 
 # panda3d-simplepbr
 
-This is a simple, basic, lightweight, no-frills PBR render pipeline for [Panda3D](https://www.panda3d.org/).
-It is currently intended to be used with [panda3d-gltf](https://github.com/Moguri/panda3d-gltf), which will output textures in the right order.
+A straight-forward, easy-to-use PBR render pipeline for [Panda3D](https://www.panda3d.org/).
+This project aims to be a drop-in replacement for Panda3D's auto-shader.
 The PBR shader is heavily inspired by the [Khronos glTF Sample Viewer](https://github.com/KhronosGroup/glTF-Sample-Viewer).
 *Note:* this project does not make an attempt to match a reference renderer.
 
@@ -19,21 +18,7 @@ The PBR shader is heavily inspired by the [Khronos glTF Sample Viewer](https://g
 * Occlusion maps
 * Basic shadow mapping for DirectionalLight and Spotlight
 * Post-tonemapping color transform via a lookup table (LUT) texture
-* IBL Diffuse
-* IBL Specular
-
-## Notable Todos
-There are a few big things still missing and are planned to be implemented:
-
-* Shadow mapping for PointLight
-
-## Other missing features
-The goal is to keep this simple and lightweight.
-As such, the following missing features are *not* currently on the roadmap:
-
-* Something to deal with many lights (e.g., deferred, forward+, tiling, clustering, etc.)
-* Fancy post-process effects (temporal anti-aliasing, ambient occlusion, screen-space reflections)
-* Environment probes
+* IBL diffuse and specular
 
 ## Installation
 
@@ -86,7 +71,7 @@ The `init()` function will choose typical defaults, but the following can be mod
 `use_normal_maps`
 : Use normal maps to modify fragment normals, defaults to `False` (NOTE: Requires models with appropriate tangents defined)
 
- `use_emission_maps`
+`use_emission_maps`
 : Use emission maps, defaults to `True`
 
 `use_occlusion_maps`
@@ -113,7 +98,10 @@ The `init()` function will choose typical defaults, but the following can be mod
 `sdr_lut_factor`
 : Factor (from 0.0 to 1.0) for how much of the LUT color to mix in, defaults to 1.0
 
-Those parameters can also be modified later on by setting the related attribute of the simplepbr pipeline returned by the init() function:
+`env_map`
+: An `EnvMap` or cubemap texture path to use for IBL, defaults to `None`
+
+Those parameters can also be modified later on by setting the related attribute of the simplepbr Ripeline returned by the init() function:
 
 ```python
         pipeline = simplepbr.init()
