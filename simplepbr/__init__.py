@@ -372,6 +372,9 @@ class Pipeline:
         if recompile:
             self._recompile_pbr()
 
+        # Copy window background color so ShowBase.set_background_color() works
+        self._filtermgr.buffers[0].set_clear_color(self.window.get_clear_color())
+
         return task.DS_cont
 
 
