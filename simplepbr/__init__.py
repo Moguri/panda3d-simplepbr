@@ -1,6 +1,12 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field, InitVar
+from dataclasses import (
+    dataclass,
+    field,
+    Field,
+    InitVar,
+    MISSING,
+)
 import builtins
 import functools
 import math
@@ -90,6 +96,11 @@ def add_prc_fields(cls: type) -> type:
 
     def factoryfn(attrname: str, attrtype: str, default_value: Any) -> Any:
         name=f'simplepbr-{attrname.replace("_", "-")}'
+        if isinstance(default_value, Field):
+            if default_value.default_factory is not MISSING:
+                default_value = default_value.default_factory()
+            elif default_value.default is not MISSING:
+                default_value = default_value.default
         return prc_types[attrtype](
             name=name,
             default_value=default_value,
@@ -99,6 +110,7 @@ def add_prc_fields(cls: type) -> type:
         annotations = cls.__dict__.get('__annotations__', {})
         for attrname, attrtype in annotations.items():
             if attrname.startswith('_'):
+                # Private member, skip
                 continue
 
             default_value = getattr(cls, attrname)
@@ -106,6 +118,7 @@ def add_prc_fields(cls: type) -> type:
                 attrtype = 'int'
 
             if attrtype not in prc_types:
+                # Not a currently supported type, skip
                 continue
 
             # pylint:disable-next=invalid-field-call

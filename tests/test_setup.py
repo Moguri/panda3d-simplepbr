@@ -31,6 +31,7 @@ def test_setup_prc_variables(showbase):
     assert pipeline.max_lights == 4
     assert not pipeline.use_emission_maps
     assert pipeline.msaa_samples == 8
+    assert not pipeline.use_330
 
 
 @pytest.mark.parametrize('showbase', ['', 'gl-version 3 2'], indirect=True)
