@@ -11,7 +11,7 @@ dynamic = ["version"]
 authors = [
     {name = "Mitchell Stokes"}
 ]
-description = "A simple, lightweight PBR render pipeline for Panda3D"
+description = "A straight-forward, easy-to-use, drop-in, PBR replacement for Panda3D's builtin auto shader"
 readme = "README.md"
 keywords = ["panda3d", "gamedev", "pbr"]
 license = {text = "BSD-3-Clause"}
