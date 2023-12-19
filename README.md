@@ -80,6 +80,9 @@ The `init()` function will choose typical defaults, but the following can be mod
 `enable_shadows`
 : Enable shadow map support, defaults to `True`
 
+`shadow_bias`
+: A global bias for shadow mapping (increase to reduce shadow acne, decrease to reduce peter-panning), defaults to `0.005`
+
 `enable_fog`
 : Enable exponential fog, defaults to False
 

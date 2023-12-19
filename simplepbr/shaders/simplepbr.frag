@@ -72,6 +72,10 @@ uniform sampler2D brdf_lut;
 uniform samplerCube filtered_env_map;
 uniform float max_reflection_lod;
 
+#ifdef ENABLE_SHADOWS
+uniform float global_shadow_bias;
+#endif
+
 const vec3 F0 = vec3(0.04);
 const float PI = 3.141592653589793;
 const float SPOTSMOOTH = 0.001;
@@ -134,6 +138,16 @@ float microfacet_distribution(FunctionParamters func_params) {
 float diffuse_function() {
     return 1.0 / PI;
 }
+
+#ifdef ENABLE_SHADOWS
+float shadow_caster_contrib(sampler2DShadow shadowmap, vec4 shadowpos) {
+    vec3 light_space_coords = shadowpos.xyz / shadowpos.w;
+    light_space_coords.z -= global_shadow_bias;
+    float shadow = texture(shadowmap, light_space_coords);
+
+    return shadow;
+}
+#endif
 
 vec3 irradiance_from_sh(vec3 normal) {
     return
@@ -200,15 +214,11 @@ void main() {
         float spotcutoff = p3d_LightSource[i].spotCosCutoff;
         float shadowSpot = smoothstep(spotcutoff-SPOTSMOOTH, spotcutoff+SPOTSMOOTH, spotcos);
 #ifdef ENABLE_SHADOWS
-#ifdef USE_330
-        float shadowCaster = textureProj(p3d_LightSource[i].shadowMap, v_shadow_pos[i]);
+        float shadow_caster = shadow_caster_contrib(p3d_LightSource[i].shadowMap, v_shadow_pos[i]);
 #else
-        float shadowCaster = shadow2DProj(p3d_LightSource[i].shadowMap, v_shadow_pos[i]).r;
+        float shadow_caster = 1.0;
 #endif
-#else
-        float shadowCaster = 1.0;
-#endif
-        float shadow = shadowSpot * shadowCaster * attenuation_factor;
+        float shadow = shadowSpot * shadow_caster * attenuation_factor;
 
         FunctionParamters func_params;
         func_params.n_dot_l = clamp(dot(n, l), 0.0, 1.0);
@@ -230,7 +240,6 @@ void main() {
         vec3 spec_contrib = vec3(F * V * D);
         color.rgb += func_params.n_dot_l * lightcol * (diffuse_contrib + spec_contrib) * shadow;
     }
-
 
     // Indirect diffuse + specular (IBL)
     vec3 ibl_f = fresnelSchlickRoughness(n_dot_v, spec_color, perceptual_roughness);

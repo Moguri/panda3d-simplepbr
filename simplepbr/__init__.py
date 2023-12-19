@@ -137,7 +137,7 @@ class Pipeline:
     _PBR_VARS: ClassVar[list[str]] = [
         'enable_fog',
         'enable_hardware_skinning',
-        'enable_shadows',
+        'shadow_bias',
         'max_lights',
         'use_emission_maps',
         'use_normal_maps',
@@ -164,6 +164,7 @@ class Pipeline:
     use_occlusion_maps: bool = False
     exposure: float = 1.0
     enable_shadows: bool = True
+    shadow_bias: float = 0.005
     enable_fog: bool  = False
     use_330: bool = field(default_factory=_get_default_330)
     use_hardware_skinning: InitVar[bool | None] = None
@@ -237,6 +238,8 @@ class Pipeline:
             self._post_process_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
         elif name == 'env_map':
             self._set_env_map_uniforms()
+        elif name == 'shadow_bias':
+            self.render_node.set_shader_input('global_shadow_bias', self.shadow_bias)
 
         if name in self._PBR_VARS and prev_value != value:
             self._recompile_pbr()
@@ -281,6 +284,7 @@ class Pipeline:
         if self.enable_hardware_skinning:
             attr = attr.set_flag(p3d.ShaderAttrib.F_hardware_skinning, True)
         self.render_node.set_attrib(attr)
+        self.render_node.set_shader_input('global_shadow_bias', self.shadow_bias)
         self._set_env_map_uniforms()
 
     def _setup_tonemapping(self) -> None:
@@ -380,6 +384,7 @@ class Pipeline:
             if not state.has_attrib(p3d.ShaderAttrib):
                 attr = self._create_shadow_shader_attrib()
                 state = state.add_attrib(attr, 1)
+                state = state.remove_attrib(p3d.CullFaceAttrib)
                 caster.set_initial_state(state)
 
         if recompile:
