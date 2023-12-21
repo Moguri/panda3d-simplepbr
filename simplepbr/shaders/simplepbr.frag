@@ -149,6 +149,19 @@ float shadow_caster_contrib(sampler2DShadow shadowmap, vec4 shadowpos) {
 }
 #endif
 
+vec3 get_normalmap_data() {
+#ifdef CALC_NORMAL_Z
+    vec2 normalXY = 2.0 * texture2D(p3d_TextureNormal, v_texcoord).rg - 1.0;
+    float normalZ = sqrt(clamp(1.0 - dot(normalXY, normalXY), 0.0, 1.0));
+    return vec3(
+        normalXY,
+        normalZ
+    );
+#else
+    return 2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0;
+#endif
+}
+
 vec3 irradiance_from_sh(vec3 normal) {
     return
         + sh_coeffs[0] * 0.282095
@@ -171,7 +184,7 @@ void main() {
     vec3 diffuse_color = (base_color.rgb * (vec3(1.0) - F0)) * (1.0 - metallic);
     vec3 spec_color = mix(F0, base_color.rgb, metallic);
 #ifdef USE_NORMAL_MAP
-    vec3 normalmap = 2.0 * texture2D(p3d_TextureNormal, v_texcoord).rgb - 1.0;
+    vec3 normalmap = get_normalmap_data();
     vec3 n = normalize(v_tbn * normalmap);
     vec3 world_normal = normalize(v_world_tbn * normalmap);
 #else

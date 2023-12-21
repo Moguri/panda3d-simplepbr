@@ -142,6 +142,7 @@ class Pipeline:
         'use_emission_maps',
         'use_normal_maps',
         'use_occlusion_maps',
+        'calculate_normalmap_blue',
     ]
     _POST_PROC_VARS: ClassVar[list[str]] = [
         'camera_node',
@@ -172,6 +173,7 @@ class Pipeline:
     sdr_lut: p3d.Texture | None = None
     sdr_lut_factor: float = 1.0
     env_map: EnvMap | str | None = None
+    calculate_normalmap_blue: bool = True
 
     # Private instance variables
     _shader_ready: bool = False
@@ -272,6 +274,7 @@ class Pipeline:
             'USE_OCCLUSION_MAP': self.use_occlusion_maps,
             'USE_330': self.use_330,
             'ENABLE_SKINNING': self.enable_hardware_skinning,
+            'CALC_NORMAL_Z': self.calculate_normalmap_blue,
         }
 
         pbrshader = shaderutils.make_shader(

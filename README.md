@@ -104,7 +104,10 @@ The `init()` function will choose typical defaults, but the following can be mod
 `env_map`
 : An `EnvMap` or cubemap texture path to use for IBL, defaults to `None`
 
-Those parameters can also be modified later on by setting the related attribute of the simplepbr Ripeline returned by the init() function:
+`calculate_normalmap_blue`
+: Calculate the blue channel (Z-axis) for a normal map in the shader (allows saving memory/bandwidth by using 2 channel normal maps), defaults to `True`
+
+Those parameters can also be modified later on by setting the related attribute of the simplepbr `Pipeline` returned by the `init()` function:
 
 ```python
         pipeline = simplepbr.init()
