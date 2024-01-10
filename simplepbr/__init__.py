@@ -11,12 +11,12 @@ import builtins
 import functools
 import math
 import os
-import typing
 from typing_extensions import (
     Any,
     ClassVar,
     Literal,
     TypeAlias,
+    TypeVar,
 )
 
 import panda3d.core as p3d
@@ -86,7 +86,8 @@ def _get_default_330() -> bool:
     return False
 
 
-def add_prc_fields(cls: type) -> type:
+TypeT = TypeVar('TypeT', bound=type)
+def add_prc_fields(cls: TypeT) -> TypeT:
     prc_types = {
         'int': p3d.ConfigVariableInt,
         'bool': p3d.ConfigVariableBool,
