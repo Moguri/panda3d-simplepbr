@@ -64,13 +64,25 @@ def _load_shader_str(shaderpath: str, defines: ShaderDefinesType | None = None) 
     defines['p3d_TextureMetalRoughness'] = 'p3d_TextureSelector'
 
     shaderstr = _add_shader_defines(shaderstr, defines)
-    if 'USE_330' in defines:
+    use_330 = defines.get('USE_330', False)
+    use_webgl = defines.get('IS_WEBGL', False)
+    if use_330:
+        if use_webgl:
+            shaderstr = shaderstr.replace(
+                '#version 120',
+                '#version 300 es\nprecision highp float;\n'
+            )
         shaderstr = shaderstr.replace('#version 120', '#version 330')
         if shaderpath.endswith('vert'):
             shaderstr = shaderstr.replace('varying ', 'out ')
             shaderstr = shaderstr.replace('attribute ', 'in ')
         else:
             shaderstr = shaderstr.replace('varying ', 'in ')
+    elif use_webgl:
+        shaderstr = shaderstr.replace(
+            '#version 120',
+            '#version 100\nprecision highp float;\n'
+        )
 
     return shaderstr
 

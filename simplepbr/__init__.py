@@ -180,9 +180,11 @@ class Pipeline:
     _shader_ready: bool = False
     _filtermgr: FilterManager = field(init=False)
     _post_process_quad: p3d.NodePath[p3d.GeomNode] = field(init=False)
+    _is_webgl: bool = field(init=False)
 
     def __post_init__(self, use_hardware_skinning: bool | None) -> None:
         self._shader_ready = False
+        self._is_webgl = 'WebGL' in self.window.type.name
 
         # Create a FilterManager instance
         self._filtermgr = FilterManager(self.window, self.camera_node)
@@ -274,6 +276,7 @@ class Pipeline:
             'ENABLE_FOG': self.enable_fog,
             'USE_OCCLUSION_MAP': self.use_occlusion_maps,
             'USE_330': self.use_330,
+            'IS_WEBGL': self._is_webgl,
             'ENABLE_SKINNING': self.enable_hardware_skinning,
             'CALC_NORMAL_Z': self.calculate_normalmap_blue,
         }
@@ -318,6 +321,7 @@ class Pipeline:
 
         defines = {
             'USE_330': self.use_330,
+            'IS_WEBGL': self._is_webgl,
             'USE_SDR_LUT': bool(self.sdr_lut),
         }
 
@@ -360,6 +364,7 @@ class Pipeline:
     def _create_shadow_shader_attrib(self) -> p3d.ShaderAttrib:
         defines = {
             'USE_330': self.use_330,
+            'IS_WEBGL': self._is_webgl,
             'ENABLE_SKINNING': self.enable_hardware_skinning,
         }
         shader = shaderutils.make_shader(
