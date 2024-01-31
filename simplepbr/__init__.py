@@ -397,6 +397,11 @@ class Pipeline:
         # Copy window background color so ShowBase.set_background_color() works
         self._filtermgr.buffers[0].set_clear_color(self.window.get_clear_color())
 
+        self.render_node.set_shader_input(
+            'camera_world_position',
+            self.camera_node.get_pos(self.render_node)
+        )
+
         return task.DS_cont
 
 

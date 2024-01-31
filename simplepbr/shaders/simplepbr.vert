@@ -23,6 +23,7 @@ uniform mat4 p3d_TransformTable[100];
 
 uniform mat4 p3d_ProjectionMatrix;
 uniform mat4 p3d_ModelViewMatrix;
+uniform mat4 p3d_ViewMatrix;
 uniform mat4 p3d_ModelMatrix;
 uniform mat3 p3d_NormalMatrix;
 uniform mat4 p3d_TextureMatrix;
@@ -39,10 +40,11 @@ attribute vec4 transform_index;
 #endif
 
 
-varying vec3 v_position;
+varying vec3 v_view_position;
+varying vec3 v_world_position;
 varying vec4 v_color;
-varying mat3 v_tbn;
 varying vec2 v_texcoord;
+varying mat3 v_view_tbn;
 varying mat3 v_world_tbn;
 #ifdef ENABLE_SHADOWS
 varying vec4 v_shadow_pos[MAX_LIGHTS];
@@ -56,32 +58,38 @@ void main() {
         p3d_TransformTable[int(transform_index.z)] * transform_weight.z +
         p3d_TransformTable[int(transform_index.w)] * transform_weight.w
     );
-    vec4 vert_pos4 = p3d_ModelViewMatrix * skin_matrix * p3d_Vertex;
-    vec4 model_normal = skin_matrix * vec4(p3d_Normal, 0.0);
+    vec4 model_position = skin_matrix * p3d_Vertex;
+    mat3 skin_matrix3 = mat3(skin_matrix);
+    vec3 model_normal = skin_matrix3 * p3d_Normal;
+    vec3 model_tangent = skin_matrix3 * p3d_Tangent.xyz;
 #else
-    vec4 vert_pos4 = p3d_ModelViewMatrix * p3d_Vertex;
-    vec4 model_normal = vec4(p3d_Normal, 0.0);
+    vec4 model_position = p3d_Vertex;
+    vec3 model_normal = p3d_Normal;
+    vec3 model_tangent = p3d_Tangent.xyz;
 #endif
-    v_position = vec3(vert_pos4);
+    vec4 view_position = p3d_ModelViewMatrix * model_position;
+    v_view_position = (view_position).xyz;
+    v_world_position = (p3d_ModelMatrix * model_position).xyz;
     v_color = p3d_Color;
     v_texcoord = (p3d_TextureMatrix * vec4(p3d_MultiTexCoord0, 0, 1)).xy;
 #ifdef ENABLE_SHADOWS
     for (int i = 0; i < p3d_LightSource.length(); ++i) {
-        v_shadow_pos[i] = p3d_LightSource[i].shadowViewMatrix * vert_pos4;
+        v_shadow_pos[i] = p3d_LightSource[i].shadowViewMatrix * view_position;
     }
 #endif
 
-    vec3 normal = normalize(p3d_NormalMatrix * model_normal.xyz);
-    vec3 tangent = normalize(vec3(p3d_ModelViewMatrix * vec4(p3d_Tangent.xyz, 0.0)));
-    vec3 bitangent = cross(normal, tangent) * p3d_Tangent.w;
-    v_tbn = mat3(
-        tangent,
-        bitangent,
-        normal
+    vec3 view_normal = normalize(p3d_NormalMatrix * model_normal);
+    vec3 view_tangent = normalize(p3d_NormalMatrix * model_tangent);
+    vec3 view_bitangent = cross(view_normal, view_tangent) * p3d_Tangent.w;
+    v_view_tbn = mat3(
+        view_tangent,
+        view_bitangent,
+        view_normal
     );
 
-    vec3 world_normal = normalize(p3d_ModelMatrixInverseTranspose * model_normal).xyz;
-    vec3 world_tangent = normalize(vec3(p3d_ModelMatrix * vec4(p3d_Tangent.xyz, 0.0)));
+    mat3 world_normal_mat = mat3(p3d_ModelMatrixInverseTranspose);
+    vec3 world_normal = normalize(world_normal_mat * model_normal);
+    vec3 world_tangent = normalize(world_normal_mat * model_tangent);
     vec3 world_bitangent = cross(world_normal, world_tangent) * p3d_Tangent.w;
     v_world_tbn = mat3(
             world_tangent,
@@ -89,5 +97,5 @@ void main() {
             world_normal
     );
 
-    gl_Position = p3d_ProjectionMatrix * vert_pos4;
+    gl_Position = p3d_ProjectionMatrix * view_position;
 }

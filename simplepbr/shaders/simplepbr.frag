@@ -49,6 +49,7 @@ uniform vec4 p3d_ColorScale;
 uniform vec4 p3d_TexAlphaOnly;
 
 uniform vec3 sh_coeffs[9];
+uniform vec3 camera_world_position;
 
 struct FunctionParamters {
     float n_dot_l;
@@ -81,10 +82,11 @@ const float PI = 3.141592653589793;
 const float SPOTSMOOTH = 0.001;
 const float LIGHT_CUTOFF = 0.001;
 
-varying vec3 v_position;
+varying vec3 v_view_position;
+varying vec3 v_world_position;
 varying vec4 v_color;
 varying vec2 v_texcoord;
-varying mat3 v_tbn;
+varying mat3 v_view_tbn;
 varying mat3 v_world_tbn;
 #ifdef ENABLE_SHADOWS
 varying vec4 v_shadow_pos[MAX_LIGHTS];
@@ -185,14 +187,12 @@ void main() {
     vec3 spec_color = mix(F0, base_color.rgb, metallic);
 #ifdef USE_NORMAL_MAP
     vec3 normalmap = get_normalmap_data();
-    vec3 n = normalize(v_tbn * normalmap);
-    vec3 world_normal = normalize(v_world_tbn * normalmap);
 #else
-    vec3 n = normalize(v_tbn[2]);
-    vec3 world_normal = normalize(v_world_tbn[2]);
+    vec3 normalmap = vec3(0, 0, 1);
 #endif
-    vec3 v = normalize(-v_position);
-    vec3 r = reflect(-v, n);
+    vec3 n = normalize(v_view_tbn * normalmap);
+    vec3 world_normal = normalize(v_world_tbn * normalmap);
+    vec3 v = normalize(-v_view_position);
 
 #ifdef USE_OCCLUSION_MAP
     float ambient_occlusion = metal_rough.r;
@@ -217,7 +217,7 @@ void main() {
             continue;
         }
 
-        vec3 light_pos = p3d_LightSource[i].position.xyz - v_position * p3d_LightSource[i].position.w;
+        vec3 light_pos = p3d_LightSource[i].position.xyz - v_view_position * p3d_LightSource[i].position.w;
         vec3 l = normalize(light_pos);
         vec3 h = normalize(l + v);
         float dist = length(light_pos);
@@ -259,8 +259,10 @@ void main() {
     vec3 ibl_kd = (1.0 - ibl_f) * (1.0 - metallic);
     vec3 ibl_diff = base_color.rgb * max(irradiance_from_sh(world_normal), 0.0) * diffuse_function();
 
+    vec3 world_view = normalize(camera_world_position - v_world_position);
+    vec3 ibl_r = reflect(-world_view, world_normal);
     vec2 env_brdf = texture2D(brdf_lut, vec2(n_dot_v, perceptual_roughness)).rg;
-    vec3 ibl_spec_color = textureCubeLod(filtered_env_map, r, perceptual_roughness * max_reflection_lod).rgb;
+    vec3 ibl_spec_color = textureCubeLod(filtered_env_map, ibl_r, perceptual_roughness * max_reflection_lod).rgb;
     vec3 ibl_spec = ibl_spec_color * (ibl_f * env_brdf.x + env_brdf.y);
     color.rgb += (ibl_kd * ibl_diff  + ibl_spec) * ambient_occlusion;
 
@@ -272,7 +274,7 @@ void main() {
 
 #ifdef ENABLE_FOG
     // Exponential fog
-    float fog_distance = length(v_position);
+    float fog_distance = length(v_view_position);
     float fog_factor = clamp(1.0 / exp(fog_distance * p3d_Fog.density), 0.0, 1.0);
     color = mix(p3d_Fog.color, color, fog_factor);
 #endif
