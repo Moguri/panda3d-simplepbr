@@ -145,8 +145,11 @@ float diffuse_function() {
 float shadow_caster_contrib(sampler2DShadow shadowmap, vec4 shadowpos) {
     vec3 light_space_coords = shadowpos.xyz / shadowpos.w;
     light_space_coords.z -= global_shadow_bias;
+#ifdef USE_330
     float shadow = texture(shadowmap, light_space_coords);
-
+#else
+    float shadow = shadow2D(shadowmap, light_space_coords).r;
+#endif
     return shadow;
 }
 #endif
