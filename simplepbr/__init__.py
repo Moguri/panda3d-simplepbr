@@ -308,6 +308,7 @@ class Pipeline:
 
         fbprops = p3d.FrameBufferProperties()
         fbprops.float_color = True
+        fbprops.srgb_color = False
         fbprops.set_rgba_bits(16, 16, 16, 16)
         fbprops.set_depth_bits(24)
         fbprops.set_multisamples(self.msaa_samples)
