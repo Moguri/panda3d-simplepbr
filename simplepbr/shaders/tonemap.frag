@@ -2,10 +2,6 @@
 
 #ifdef USE_330
     #define texture2D texture
-#endif
-
-#ifdef USE_330
-    #define texture2D texture
     #define texture3D texture
 #endif
 
