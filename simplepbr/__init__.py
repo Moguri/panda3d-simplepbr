@@ -211,7 +211,7 @@ class Pipeline:
         self._setup_tonemapping()
 
         # Do updates based on scene changes
-        self.taskmgr.add(self._update, 'simplepbr update')
+        self.taskmgr.add(self._update, 'simplepbr update', sort=49)
 
         self._shader_ready = True
 
