@@ -19,7 +19,8 @@ out vec4 o_color;
 #endif
 
 void main() {
-    vec3 color = texture2D(tex, v_texcoord).rgb;
+    vec4 tex_color = texture2D(tex, v_texcoord);
+    vec3 color = tex_color.rgb;
 
     color *= exposure;
     color = max(vec3(0.0), color - vec3(0.004));
@@ -32,8 +33,8 @@ void main() {
     color = mix(color, lut_color, sdr_lut_factor);
 #endif
 #ifdef USE_330
-    o_color = vec4(color, 1.0);
+    o_color = vec4(color, tex_color.a);
 #else
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragColor = vec4(color, tex_color.a);
 #endif
 }
