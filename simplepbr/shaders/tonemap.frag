@@ -33,7 +33,7 @@ void main() {
     color = mix(color, lut_color, sdr_lut_factor);
 #endif
 #ifdef USE_330
-    oo_color = vec4(color, texColor.a);
+    o_color = vec4(color, texColor.a);
 #else
     gl_FragColor = vec4(color, texColor.a);
 #endif
