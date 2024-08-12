@@ -164,7 +164,7 @@ class Pipeline:
     use_normal_maps: bool = False
     use_emission_maps: bool = True
     use_occlusion_maps: bool = False
-    exposure: float = 1.0
+    exposure: float = 0.0
     enable_shadows: bool = True
     shadow_bias: float = 0.005
     enable_fog: bool  = False
@@ -238,7 +238,7 @@ class Pipeline:
             self._setup_tonemapping()
 
         if name == 'exposure':
-            self._post_process_quad.set_shader_input('exposure', self.exposure)
+            self._post_process_quad.set_shader_input('exposure', 2**self.exposure)
         elif name == 'sdr_lut_factor':
             self._post_process_quad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
         elif name == 'env_map':
@@ -334,7 +334,7 @@ class Pipeline:
         )
         postquad.set_shader(tonemap_shader)
         postquad.set_shader_input('tex', scene_tex)
-        postquad.set_shader_input('exposure', self.exposure)
+        postquad.set_shader_input('exposure', 2**self.exposure)
         if self.sdr_lut:
             postquad.set_shader_input('sdr_lut', self.sdr_lut)
             postquad.set_shader_input('sdr_lut_factor', self.sdr_lut_factor)
