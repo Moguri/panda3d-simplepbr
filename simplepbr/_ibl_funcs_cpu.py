@@ -5,9 +5,11 @@ import functools
 import math
 import struct
 import typing
+from typing import (
+    Final,
+)
 from typing_extensions import (
     TypeAlias,
-    Final,
 )
 
 import panda3d.core as p3d

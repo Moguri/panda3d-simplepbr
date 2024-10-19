@@ -2,15 +2,15 @@ from __future__ import annotations
 
 import os
 
+from typing import (
+    Any,
+)
 from typing_extensions import (
-    TYPE_CHECKING,
     TypeAlias,
 )
 
 import panda3d.core as p3d
 
-if TYPE_CHECKING:
-    from typing import Any
 
 try:
     from .shaders import shaders # type: ignore

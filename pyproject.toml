@@ -30,7 +30,19 @@ requires-python = ">= 3.8"
 homepage = "https://github.com/Moguri/panda3d-simplepbr"
 
 [project.optional-dependencies]
-test = ["pytest", "pylint~=3.0.0", "pytest-pylint"]
+test = ["pytest", "ruff"]
+
+[tool.ruff]
+line-length = 100
+
+[tool.ruff.lint]
+select = [
+    "E", # pycodestyle
+    "F", # pyflakes
+    "UP", # pyupgrade
+    "B", # flake8-bugbear
+    "SIM", # flake8-simplify
+]
 
 [project.scripts]
 hdr2env = "simplepbr.hdr2env:main"
@@ -40,16 +52,3 @@ version = {attr = "simplepbr.version.__version__"}
 
 [tool.setuptools]
 packages = ["simplepbr"]
-
-[tool.pytest.ini_options]
-addopts = "--pylint"
-
-[tool.pylint.main]
-jobs = 0
-
-[tool.pylint."message control"]
-disable = [
-    "r",
-    "missing-docstring",
-    "c-extension-no-member",
-]

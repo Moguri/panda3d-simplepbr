@@ -9,11 +9,12 @@ from dataclasses import (
 )
 import builtins
 import functools
-import math
 import os
+from typing import (
+    ClassVar,
+)
 from typing_extensions import (
     Any,
-    ClassVar,
     Literal,
     TypeAlias,
     TypeVar,
@@ -25,7 +26,7 @@ from direct.showbase.ShowBase import ShowBase
 from direct.filter.FilterManager import FilterManager
 from direct.task.Task import TaskManager
 
-from .version import __version__
+from .version import __version__ as __version__
 from .envmap import EnvMap
 from .envpool import EnvPool
 from . import logging
@@ -78,12 +79,13 @@ def _get_default_330() -> bool:
         cvar.get_word(i)
         for i in range(cvar.get_num_words())
     ]
-    if len(gl_version) >= 2 and gl_version[0] >= 3 and gl_version[1] >= 2:
-        # Not exactly accurate, but setting this variable to '3 2' is common for disabling
-        # the fixed-function pipeline and 3.2 support likely means 3.3 support as well.
-        return True
-
-    return False
+    # Not exactly accurate, but setting this variable to '3 2' is common for disabling
+    # the fixed-function pipeline and 3.2 support likely means 3.3 support as well.
+    return (
+        len(gl_version) >= 2
+        and gl_version[0] >= 3
+        and gl_version[1] >= 2
+    )
 
 
 TypeT = TypeVar('TypeT', bound=type)

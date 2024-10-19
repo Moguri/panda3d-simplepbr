@@ -1,6 +1,7 @@
-from __future__ import annotations
-
 from pathlib import Path
+from typing_extensions import (
+    Self,
+)
 
 import panda3d.core as p3d
 
@@ -13,7 +14,7 @@ from . import logging
 
 
 class EnvPool:
-    _ptr: 'EnvPool' | None = None
+    _ptr: Self | None = None
 
     def __init__(self) -> None:
         self._envmaps: dict[p3d.Filename, EnvMap] = {}
@@ -73,7 +74,7 @@ class EnvPool:
         return envmap
 
     @classmethod
-    def ptr(cls) -> 'EnvPool':
+    def ptr(cls) -> Self:
         if cls._ptr is None:
             cls._ptr = cls()
 
