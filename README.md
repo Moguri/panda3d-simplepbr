@@ -136,7 +136,7 @@ For an example application using `panda3d-simplepbr` check out the [viewer](http
 This project uses [uv](https://docs.astral.sh/uv/) for project management.
 After installing `uv`, run `uv sync` to install dependencies and create a virtual environment.
 
-## Linting
+### Linting
 
 This project uses [ruff](https://docs.astral.sh/ruff/) for linting.
 Running lint checks can be done with:
@@ -145,13 +145,13 @@ Running lint checks can be done with:
 uv run ruff check
 ```
 
-## Running Tests
+### Running Tests
 
 ```bash
 uv run pytest
 ```
 
-## Building Wheels
+### Building Wheels
 
 ```bash
 uv run build
