@@ -29,8 +29,8 @@ requires-python = ">= 3.8"
 [project.urls]
 homepage = "https://github.com/Moguri/panda3d-simplepbr"
 
-[project.optional-dependencies]
-test = ["pytest", "ruff"]
+[dependency-groups]
+dev = ["pytest", "ruff"]
 
 [tool.ruff]
 line-length = 100

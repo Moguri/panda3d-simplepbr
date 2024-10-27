@@ -130,32 +130,31 @@ simplepbr expects the following textures are assigned to the following texture s
 
 For an example application using `panda3d-simplepbr` check out the [viewer](https://github.com/Moguri/panda3d-gltf/blob/master/gltf/viewer.py) in the [panda3d-gltf repo](https://github.com/Moguri/panda3d-gltf).
 
-## Running Tests
 
-First install `panda3d-simplepbr` in editable mode along with `test` extras:
+## Developing
+
+This project uses [uv](https://docs.astral.sh/uv/) for project management.
+After installing `uv`, run `uv sync` to install dependencies and create a virtual environment.
+
+## Linting
+
+This project uses [ruff](https://docs.astral.sh/ruff/) for linting.
+Running lint checks can be done with:
 
 ```bash
-pip install -e .[test]
+uv run ruff check
 ```
 
-Then run the test suite with `pytest`:
+## Running Tests
 
 ```bash
-pytest
+uv run pytest
 ```
 
 ## Building Wheels
 
-Install `build`:
-
 ```bash
-pip install --upgrade build
-```
-
-and run:
-
-```bash
-python -m build
+uv run build
 ```
 
 ## License
