@@ -55,7 +55,7 @@ def calc_vector(dim: int, face_idx: int, xloc: float, yloc: float) -> Vec3TupleT
     return vec
 
 
-def calc_solid_angle(invdim: float, x: float, y: float) -> float:
+def calc_solid_angle(invdim: float, x: int, y: int) -> float:
     s = ((x + 0.5) * 2 * invdim) - 1
     t = ((y + 0.5) * 2 * invdim) - 1
     x0 = s - invdim
@@ -118,15 +118,16 @@ def get_sh_coeffs_from_cube_map(texcubemap: p3d.Texture) -> list[p3d.LVector3]:
     colorptr = p3d.LColor()
 
     # SH Basis
-    for face in range(texcubemap.z_size):
-        for x in range(texcubemap.x_size):
-            for y in range(texcubemap.y_size):
+    for x in range(texcubemap.x_size):
+        for y in range(texcubemap.y_size):
+            sa = calc_solid_angle(invdim, x, y)
+            for face in range(texcubemap.z_size):
                 # Grab the color value
                 peeker.fetch_pixel(colorptr, x, y, face)
                 color = colorptr.xyz
 
                 # Use SA as a weight to better handle corners (box vs sphere)
-                color *= calc_solid_angle(invdim, x, y)
+                color *= sa
 
                 # Multiply color by SH basis and add results
                 vec = calc_vector(dim, face, x, y)
