@@ -10,47 +10,10 @@ from . import _shaderutils as shaderutils
 
 def make_skybox(cubemap: p3d.Texture) -> p3d.NodePath[p3d.GeomNode]:
     verts = [
-        -1.0,  1.0, -1.0,
-        -1.0, -1.0, -1.0,
-         1.0, -1.0, -1.0,
-         1.0, -1.0, -1.0,
-         1.0,  1.0, -1.0,
-        -1.0,  1.0, -1.0,
-
-        -1.0, -1.0,  1.0,
-        -1.0, -1.0, -1.0,
-        -1.0,  1.0, -1.0,
-        -1.0,  1.0, -1.0,
-        -1.0,  1.0,  1.0,
-        -1.0, -1.0,  1.0,
-
-         1.0, -1.0, -1.0,
-         1.0, -1.0,  1.0,
-         1.0,  1.0,  1.0,
-         1.0,  1.0,  1.0,
-         1.0,  1.0, -1.0,
-         1.0, -1.0, -1.0,
-
-        -1.0, -1.0,  1.0,
-        -1.0,  1.0,  1.0,
-         1.0,  1.0,  1.0,
-         1.0,  1.0,  1.0,
-         1.0, -1.0,  1.0,
-        -1.0, -1.0,  1.0,
-
-        -1.0,  1.0, -1.0,
-         1.0,  1.0, -1.0,
-         1.0,  1.0,  1.0,
-         1.0,  1.0,  1.0,
-        -1.0,  1.0,  1.0,
-        -1.0,  1.0, -1.0,
-
-        -1.0, -1.0, -1.0,
-        -1.0, -1.0,  1.0,
-         1.0, -1.0, -1.0,
-         1.0, -1.0, -1.0,
-        -1.0, -1.0,  1.0,
-         1.0, -1.0,  1.0,
+        -1.0, -1.0, 0.0,
+        1.0, -1.0, 0.0,
+        1.0, 1.0, 0.0,
+        -1.0, 1.0, 0.0,
     ]
     num_verts = len(verts) // 3
 
@@ -63,7 +26,10 @@ def make_skybox(cubemap: p3d.Texture) -> p3d.NodePath[p3d.GeomNode]:
         vertex.add_data3(*verts[idx:idx+3])
 
     primitive = p3d.GeomTriangles(p3d.Geom.UH_static)
-    primitive.add_consecutive_vertices(0, num_verts)
+    primitive.add_vertices(0, 1, 2)
+    primitive.close_primitive()
+    primitive.add_vertices(2, 3, 0)
+    primitive.close_primitive()
 
     geom = p3d.Geom(vdata)
     geom.add_primitive(primitive)
