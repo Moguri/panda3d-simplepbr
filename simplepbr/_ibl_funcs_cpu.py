@@ -165,7 +165,7 @@ def van_der_corput(idx: int, base: int = 2) -> float:
     return result
 
 
-@functools.lru_cache(maxsize=None)
+@functools.cache
 def hammersley(idx: int, maxnum: int) -> Vec2TupleType:
     return (idx / maxnum, van_der_corput(idx))
 
