@@ -8,6 +8,8 @@ This project aims to be a drop-in replacement for Panda3D's auto-shader.
 The PBR shader is heavily inspired by the [Khronos glTF Sample Viewer](https://github.com/KhronosGroup/glTF-Sample-Viewer).
 *Note:* this project does not make an attempt to match a reference renderer.
 
+![IBL](docs/img/ibl.png)
+
 ## Features
 * Supports running on a wide range of hardware with an easy OpenGL 2.1+ requirement
 * Forward rendered metal-rough PBR
@@ -32,7 +34,6 @@ To grab the latest development build, use:
 
 ```bash
 pip install git+https://github.com/Moguri/panda3d-simplepbr.git
-
 ```
 
 ## Usage
