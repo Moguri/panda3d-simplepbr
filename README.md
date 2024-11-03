@@ -36,6 +36,10 @@ To grab the latest development build, use:
 pip install git+https://github.com/Moguri/panda3d-simplepbr.git
 ```
 
+## Documentation
+
+More detailed documentation can be found [here](https://moguri.github.io/panda3d-simplepbr/).
+
 ## Usage
 
 Just add `simplepbr.init()` to your `ShowBase` instance:
