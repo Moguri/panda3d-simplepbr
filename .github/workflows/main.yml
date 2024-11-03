@@ -13,10 +13,6 @@ jobs:
       uses: astral-sh/setup-uv@v3
       with:
         enable-cache: true
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: 3.8
     - name: Setup xvfb
       run: |
         sudo apt-get install -y xvfb
