@@ -56,80 +56,8 @@ class App(ShowBase):
         simplepbr.init()
 ```
 
-The `init()` function will choose typical defaults, but the following can be modified via keyword arguments:
-
-`render_node`
-: The node to attach the shader too, defaults to `base.render` if `None`
-
-`window`
-: The window to attach the framebuffer too, defaults to `base.win` if `None`
-
-`camera_node`
-: The NodePath of the camera to use when rendering the scene, defaults to `base.cam` if `None`
-
-`msaa_samples`
-: The number of samples to use for multisample anti-aliasing, defaults to 4
-
-`max_lights`
-: The maximum number of lights to render, defaults to 8
-
-`use_normal_maps`
-: Use normal maps to modify fragment normals, defaults to `False` (NOTE: Requires models with appropriate tangents defined)
-
-`use_emission_maps`
-: Use emission maps, defaults to `True`
-
-`use_occlusion_maps`
-: Use occlusion maps, defaults to `False` (NOTE: Requires occlusion channel in metal-roughness map)
-
-`enable_shadows`
-: Enable shadow map support, defaults to `True`
-
-`shadow_bias`
-: A global bias for shadow mapping (increase to reduce shadow acne, decrease to reduce peter-panning), defaults to `0.005`
-
-`enable_fog`
-: Enable exponential fog, defaults to False
-
-`exposure`
-: a value used to multiply the screen-space color value prior to tonemapping, defaults to 1.0
-
-`use_330`
-: Force shaders to use GLSL version 330 (if `True`) or 120 (if `False`) or auto-detect if `None`, defaults to `None`
-
-`use_hardware_skinning`
-: Force usage of hardware skinning for skeleton animations or auto-detect if `None`, defaults to `None`
-
-`sdr_lut`
-: Color LUT to use post-tonemapping
-
-`sdr_lut_factor`
-: Factor (from 0.0 to 1.0) for how much of the LUT color to mix in, defaults to 1.0
-
-`env_map`
-: An `EnvMap` or cubemap texture path to use for IBL, defaults to `None`
-
-`calculate_normalmap_blue`
-: Calculate the blue channel (Z-axis) for a normal map in the shader (allows saving memory/bandwidth by using 2 channel normal maps), defaults to `True`
-
-Those parameters can also be modified later on by setting the related attribute of the simplepbr `Pipeline` returned by the `init()` function:
-
-```python
-        pipeline = simplepbr.init()
-        
-        ...
-        
-        pipeline.use_normals_map = True
-```
-
-### Textures
-
-simplepbr expects the following textures are assigned to the following texture stages:
-
-* BaseColor - Modulate
-* MetalRoughness - Selector
-* Normals - Normal
-* Emission - Emission
+The `init()` function will choose typical defaults.
+Details on available options can be found [here](https://moguri.github.io/panda3d-simplepbr/config/)
 
 ## Example
 
