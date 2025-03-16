@@ -26,7 +26,6 @@ from direct.showbase.ShowBase import ShowBase
 from direct.filter.FilterManager import FilterManager
 from direct.task.Task import TaskManager
 
-from .version import __version__ as __version__
 from .envmap import EnvMap
 from .envpool import EnvPool
 from . import logging
