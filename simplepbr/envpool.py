@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Union
 from typing_extensions import (
     Self,
 )
@@ -31,7 +32,7 @@ class EnvPool:
 
     def load(
         self,
-        filepath: p3d.Filename | Path | str,
+        filepath: Union[p3d.Filename, Path, str],
         prefiltered_size: int = DEFAULT_PREFILTERED_SIZE,
         prefiltered_samples: int = DEFAULT_PREFILTERED_SAMPLES,
     ) -> EnvMap:
